@@ -1,12 +1,24 @@
 const axios = require("axios");
 const config = require("../config/config");
 const Logger = require("../utils/logger");
+const https = require('https');
+const dns = require("dns");
+
+
+dns.setDefaultResultOrder('ipv4first');
+
 
 class WhatsAppService {
   constructor() {
     this.baseUrl = config.whapi.baseUrl;
     this.token = config.whapi.token;
     this.channel = config.whapi.channel;
+    this.httpsAgent = new https.Agent({
+      family: 4, // Force IPv4
+      keepAlive: true,
+      maxSockets: 50,
+      timeout: 30000,
+    });
   }
 
   /**
@@ -33,6 +45,7 @@ class WhatsAppService {
           params: {
             channel: this.channel,
           },
+          httpsAgent: this.httpsAgent,
         }
       );
 
@@ -63,7 +76,7 @@ class WhatsAppService {
    * @param {string} messageText - Original message from user
    */
   async sendAcknowledgment(phoneNumber, name, messageText) {
-    const message = `Hi ${name}! I received your message: "${messageText}"\n\nHow can I assist you?`;
+    const message = messageText === ""?`Hi ${name}! I received your message: "${messageText}"\n\nHow can I assist you?`:messageText;
     return this.sendMessage(phoneNumber, message);
   }
 
@@ -77,6 +90,7 @@ class WhatsAppService {
         headers: {
           Authorization: `Bearer ${this.token}`,
         },
+        httpsAgent: this.httpsAgent,
       });
       return response.data;
     } catch (error) {
@@ -108,17 +122,20 @@ class WhatsAppService {
         footer,
         action,
       };
+      console.log(body,action)
 
       Logger.info("Sending interactive message", payload);
 
       const response = await axios.post(
-        "https://gate.whapi.cloud/messages/interactive",
+        `${this.baseUrl}/messages/interactive`,
         payload,
         {
           headers: {
-            Authorization: `Bearer ${process.env.WHAPI_TOKEN}`,
+            Authorization: `Bearer ${this.token}`,
             "Content-Type": "application/json",
           },
+          httpsAgent: this.httpsAgent,
+        
         }
       );
 
@@ -161,14 +178,19 @@ class WhatsAppService {
       if (!endPoint) {
         throw new Error(`Unsupported message type: ${type}`);
       }
+
+      console.log(process.env.WHAPI_TOKEN,"this is token",  `${this.baseUrl}/messages/${endPoint}`)
+
       const response = await axios.post(
-        `https://gate.whapi.cloud/messages/${endPoint}`,
+        `${this.baseUrl}/messages/${endPoint}`,
         payload,
         {
           headers: {
-            Authorization: `Bearer ${process.env.WHAPI_TOKEN}`,
+            Authorization: `Bearer ${this.token}`,
             "Content-Type": "application/json",
           },
+          httpsAgent: this.httpsAgent,
+        
         }
       );
 

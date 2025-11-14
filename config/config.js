@@ -19,5 +19,6 @@ module.exports = {
   },
   webhook: {
     secret: process.env.WEBHOOK_SECRET, // Optional: for webhook validation
-  }
+  },
+  
 };

@@ -5,6 +5,7 @@ const app = require("./app");
 const config = require("./config/config");
 const Logger = require("./utils/logger");
 const database = require("./config/db");
+const inactivityReminderService = require("./services/inactivityReminderService"); // ADD THIS LINE
 
 // Validate required environment variables
 const validateConfig = () => {
@@ -62,6 +63,11 @@ const startServer = async () => {
         database: database.isConnected() ? "connected" : "disconnected",
         modelsLoaded: Object.keys(database.models),
       });
+    
+       // ============================================
+      // START INACTIVITY REMINDER JOB
+      // ============================================
+      // inactivityReminderService.startInactivityReminderJob();
     });
 
     // Graceful shutdown
