@@ -50,7 +50,7 @@ class StoryService {
         } catch (error) {
           Logger.error("Error showing post-recording menu", error);
         }
-      }, 20000); // 20 seconds
+      }, 500000); // 20 seconds
 
     } catch (error) {
       Logger.error("Error starting story recording", error);

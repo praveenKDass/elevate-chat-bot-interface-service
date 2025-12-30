@@ -478,7 +478,7 @@ class ProgramService {
         } catch (error) {
           Logger.error("Error showing menu after delay", error);
         }
-      }, 20000); // 1 minute
+      }, 10000); // 1 minute
     } catch (error) {
       Logger.error("Error generating or sending report", error);
       await whatsappService.sendMessage(
