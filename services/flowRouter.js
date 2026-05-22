@@ -1,5 +1,5 @@
 // ============================================
-// FILE: services/flowRouter.js - WITH EVIDENCE UPLOAD
+// FILE: services/flowRouter.js
 // ============================================
 const Logger = require("../utils/logger");
 const usersQueries = require("../database/databaseQueries/userQueries");
@@ -15,7 +15,10 @@ const projectSubmissionService = require("./projectSubmissionService");
 const Project = require("../database/models/project");
 const fileUploadService = require("./fileUploadService");
 const aiService = require("./aiService2");
-const aiIntentRouter = require("./aiIntentRouter");
+const languageService = require("./languageService");
+const sessionService = require("./sessionService");
+const storyPostSessionService = require("./storyPostSessionService");
+
 class FlowRouter {
   constructor() {
     this.flowHandlers = {
@@ -30,1147 +33,1136 @@ class FlowRouter {
   }
 
   /**
-   * Main routing logic - decides which service should handle the message
-   * @param {Object} message - WhatsApp message object
-   * @returns {Promise<{success: boolean, handled: boolean}>}
+   * Main routing logic
    */
-  async route(message) {
-    try {
-      const phoneNumber = message.from;
+  // async route(message) {
+  //   try {
+  //     const phoneNumber = message.from;
 
-      // ============================================
-      // STEP 0: Track user activity
-      // ============================================
-      await inactivityReminderService.trackUserActivity(phoneNumber);
+  //     const keys = [
+  //       "evidenceLimit",
+  //       "requestNextPhoto",
+  //       "done",
+  //       "cancelEvidenceUpload",
+  //       "lostSession",
+  //       "cancelSession",
+  //       "editStoryText",
+  //       "voiceEditPrompt",
+  //       "voiceRetryPrompt",
+  //       "voiceSend",
+  //       "voiceEdit",
+  //       "voiceRetry",
+  //     ];
+  //     const selectedLanguageText = await languageService.tBatch(
+  //       phoneNumber,
+  //       keys,
+  //     );
 
-      // ============================================
-      // STEP 0.5: Handle media files (EVIDENCE UPLOAD)
-      // ============================================
-      const lastMessage = await usersQueries.getLastMessage(phoneNumber);
-      console.log(lastMessage, "this is lastMessage");
+  //     // ============================================
+  //     // STEP 0: Track user activity
+  //     // ============================================
+  //     await inactivityReminderService.trackUserActivity(phoneNumber);
 
-      if (
-        lastMessage?.context?.uploadingEvidence &&
-        this.isMediaMessage(message)
-      ) {
-        return await this.handleMediaUpload(message, phoneNumber);
-      }
+  //     // ============================================
+  //     // STEP 0.5: Handle media evidence upload (existing flow)
+  //     // ============================================
+  //     const lastMessage = await usersQueries.getLastMessage(phoneNumber);
 
-      const messageText = message.text?.body?.trim() || "";
+  //     if (
+  //       lastMessage?.context?.uploadingEvidence &&
+  //       this.isMediaMessage(message)
+  //     ) {
+  //       return await this.handleMediaUpload(message, phoneNumber);
+  //     }
 
-      Logger.info("Flow routing check", {
+  //     // ============================================
+  //     // STEP 0.6: Handle image uploads during post-session photo flow
+  //     // ============================================
+  //     if (
+  //       lastMessage?.flow === "post_session_upload" &&
+  //       message.type === "image"
+  //     ) {
+  //       return await storyPostSessionService.handlePhotoUpload(
+  //         phoneNumber,
+  //         message,
+  //       );
+  //     }
+
+  //     const messageText = message.text?.body?.trim() || "";
+
+  //     Logger.info("Flow routing check", {
+  //       phoneNumber,
+  //       hasActiveFlow: !!lastMessage?.flow,
+  //       currentFlow: lastMessage?.flow || "none",
+  //       currentStep: lastMessage?.step || 0,
+  //       messageType: message.type,
+  //     });
+
+  //     // ============================================
+  //     // STEP 1: Voice messages
+  //     // ============================================
+  //     if (message.type === "audio" || message.type === "voice") {
+  //       return await this.handleVoiceMessage(message, phoneNumber);
+  //     }
+
+  //     // ============================================
+  //     // STEP 2: Extract interactive responses
+  //     // ============================================
+  //     const buttonResponse =
+  //       message?.interactive?.buttons_reply?.id ||
+  //       message?.reply?.buttons_reply?.id ||
+  //       message?.buttons_reply?.id;
+
+  //     const listResponse =
+  //       message?.interactive?.list_reply?.id ||
+  //       message?.reply?.list_reply?.id ||
+  //       message?.list_reply?.id;
+
+  //     let selectedAction = buttonResponse || listResponse;
+  //     if (selectedAction) {
+  //       selectedAction = selectedAction
+  //         .replace(/^ButtonsV3:/, "")
+  //         .replace(/^ListV3:/, "");
+  //     }
+
+  //     Logger.debug("Extracted actions", {
+  //       buttonResponse,
+  //       listResponse,
+  //       selectedAction,
+  //     });
+
+  //     // ============================================
+  //     // STEP 3: Route interactive actions
+  //     // ============================================
+  //     if (selectedAction) {
+  //       // ── Session inactivity: user wants to CONTINUE ──────────────
+  //       // Triggered by the 15-minute inactivity prompt sent by
+  //       // sessionService._handleInactivityTimeout()
+  //       if (selectedAction === "session_continue") {
+  //         return await this.handleSessionContinue(phoneNumber);
+  //       }
+
+  //       // ── Session inactivity / disconnect: user wants NEW session ─
+  //       // Close the existing WS (if still open) and let the user pick
+  //       // a new session type from the main menu.
+  //       if (selectedAction === "session_new") {
+  //         return await this.handleSessionNew(phoneNumber, message);
+  //       }
+
+  //       // ── Voice: user approved transcript ─────────────────────────
+  //       if (selectedAction === "voice_send") {
+  //         const lastMsg = await usersQueries.getLastMessage(phoneNumber);
+  //         const text = lastMsg?.context?.pendingText;
+
+  //         if (!text) {
+  //           await whatsappService.sendMessage(
+  //             phoneNumber,
+  //             "❌ No pending message found.",
+  //           );
+
+  //           return { success: false, handled: true };
+  //         }
+
+  //         const sent = await sessionService.sendMessage(phoneNumber, text);
+
+  //         if (sent) {
+  //           await usersQueries.updateLastMessage(phoneNumber, {
+  //             flow: null,
+  //             context: {},
+  //             text: "voice_sent",
+  //           });
+
+  //           await whatsappService.sendMessage(
+  //             phoneNumber,
+  //             "✅ Message sent successfully.",
+  //           );
+  //         } else {
+  //           await whatsappService.sendMessage(
+  //             phoneNumber,
+  //             "❌ Failed to send message.",
+  //           );
+  //         }
+
+  //         return {
+  //           success: sent,
+  //           handled: true,
+  //           route: sent ? "ws-voice-forwarded" : "ws-send-failed",
+  //         };
+  //       }
+
+  //       // ── Voice: user wants to edit text ──────────────────────────
+  //       if (selectedAction === "voice_edit") {
+  //         const lastMsg = await usersQueries.getLastMessage(phoneNumber);
+
+  //         if (!lastMsg?.context?.pendingText) {
+  //           await whatsappService.sendMessage(
+  //             phoneNumber,
+  //             "❌ No transcript found to edit.",
+  //           );
+
+  //           return { success: false, handled: true };
+  //         }
+
+  //         await usersQueries.updateLastMessage(phoneNumber, {
+  //           flow: "voice_edit",
+  //           context: lastMsg.context,
+  //           text: "voice_edit_pending",
+  //         });
+
+  //         await whatsappService.sendMessage(
+  //           phoneNumber,
+  //           "✏️ Type your corrected message:",
+  //         );
+
+  //         return {
+  //           success: true,
+  //           handled: true,
+  //           route: "ws-voice-edit",
+  //         };
+  //       }
+
+  //       // ── Voice: retry recording ──────────────────────────────────
+  //       if (selectedAction === "voice_retry") {
+  //         await usersQueries.updateLastMessage(phoneNumber, {
+  //           flow: null,
+  //           context: {},
+  //           text: "voice_retry",
+  //         });
+
+  //         await whatsappService.sendMessage(
+  //           phoneNumber,
+  //           "🔄 Please send your voice note again.",
+  //         );
+
+  //         return {
+  //           success: true,
+  //           handled: true,
+  //           route: "ws-voice-retry",
+  //         };
+  //       }
+
+  //       // ── Post-session: user wants to upload photos ───────────────
+  //       if (selectedAction === "post_upload_yes") {
+  //         await whatsappService.sendMessage(
+  //           phoneNumber,
+  //           `📷 ${selectedLanguageText.evidenceLimit}\n\n` +
+  //             `${selectedLanguageText.done}`,
+  //         );
+  //         return { success: true, handled: true };
+  //       }
+
+  //       // ── Post-session: user adds more photos (acknowledged) ──────
+  //       if (selectedAction === "post_upload_more") {
+  //         await whatsappService.sendMessage(
+  //           phoneNumber,
+  //           `📷 ${selectedLanguageText.requestNextPhoto}`,
+  //         );
+  //         return { success: true, handled: true };
+  //       }
+
+  //       // ── Post-session: user finished uploading or skipped ────────
+  //       if (
+  //         selectedAction === "post_upload_done" ||
+  //         selectedAction === "post_upload_skip"
+  //       ) {
+  //         return await storyPostSessionService.handleUploadDone(phoneNumber);
+  //       }
+
+  //       // ── Report: download ────────────────────────────────────────
+  //       if (selectedAction === "download_report") {
+  //         return await storyPostSessionService.handleDownloadReport(
+  //           phoneNumber,
+  //         );
+  //       }
+
+  //       // ── Report: edit ────────────────────────────────────────────
+  //       if (selectedAction === "edit_report") {
+  //         return await storyPostSessionService.handleEditReport(phoneNumber);
+  //       }
+
+  //       // ── Language selection ──────────────────────────────────────
+  //       if (languageService.isLanguageButton(selectedAction)) {
+  //         return await this.handleLanguageSelection(
+  //           phoneNumber,
+  //           selectedAction,
+  //         );
+  //       }
+
+  //       // ── Main menu session starters ──────────────────────────────
+  //       if (selectedAction === "capture_discussion") {
+  //         return await this.handleSessionStart(
+  //           phoneNumber,
+  //           "discussion",
+  //           message,
+  //         );
+  //       }
+
+  //       if (selectedAction === "record_story") {
+  //         return await this.handleSessionStart(phoneNumber, "story", message);
+  //       }
+
+  //       // ── Forward Mohini option replies over WS ───────────────────
+  //       if (selectedAction.startsWith("mohini_opt_")) {
+  //         const value = selectedAction.split("_").slice(3).join("_");
+  //         const sent = sessionService.sendMessage(phoneNumber, value);
+  //         if (!sent) {
+  //           await whatsappService.sendMessage(
+  //             phoneNumber,
+  //             `⚠️ ${selectedLanguageText.lostSession}`,
+  //           );
+  //         }
+  //         return { success: true, handled: true };
+  //       }
+
+  //       // ============================================
+  //       // STEP 4: Text messages
+  //       // ============================================
+  //       if (messageText) {
+  //         // ── "done"/"skip" text during post-session photo-upload flow ─
+  //         if (
+  //           lastMessage?.flow === "post_session_upload" &&
+  //           /^(done|skip|finish|complete)$/i.test(messageText)
+  //         ) {
+  //           return await storyPostSessionService.handleUploadDone(phoneNumber);
+  //         }
+
+  //         // ── Forward text to active Mohini WS session ────────────────
+  //         if (sessionService.isConnected(phoneNumber)) {
+  //           const sent = sessionService.sendMessage(phoneNumber, messageText);
+  //           if (sent) {
+  //             Logger.info("Text forwarded to Mohini WS", { phoneNumber });
+  //             return { success: true, handled: true, route: "ws-forwarded" };
+  //           }
+  //         }
+
+  //         // ── Evidence upload flow ─────────────────────────────────────
+  //         if (lastMessage?.context?.uploadingEvidence) {
+  //           if (/^(done|finish|complete|next)$/i.test(messageText)) {
+  //             return await this.handleEvidenceUploadComplete(phoneNumber);
+  //           }
+  //           if (/^(cancel|exit)$/i.test(messageText)) {
+  //             await usersQueries.updateLastMessage(phoneNumber, {
+  //               flow: "project_tasks",
+  //               step: 2,
+  //               context: {
+  //                 projectId: lastMessage.context.projectId,
+  //                 currentTaskIndex: lastMessage.context.currentTaskIndex,
+  //                 uploadingEvidence: false,
+  //               },
+  //               text: "cancel_evidence_upload",
+  //             });
+  //             await whatsappService.sendMessage(
+  //               phoneNumber,
+  //               `❌ ${selectedLanguageText.cancelEvidenceUpload}`,
+  //             );
+  //             return { success: true, handled: true };
+  //           }
+  //         }
+
+  //         // ── Task number selection ────────────────────────────────────
+  //         if (
+  //           lastMessage?.flow === "project_tasks" &&
+  //           /^\d+$/.test(messageText)
+  //         ) {
+  //           const taskIndex = parseInt(messageText);
+  //           const lastMsg = await usersQueries.getLastMessage(phoneNumber);
+  //           const projectId = lastMsg?.context?.projectId;
+  //           const projectData = await Project.findOne(
+  //             { projectId, phoneNumber },
+  //             { tasks: 1, projectName: 1, projectData: 1 },
+  //           ).lean();
+  //           if (!projectData) {
+  //             await whatsappService.sendMessage(
+  //               phoneNumber,
+  //               "❌ Project not found. Please select project again.",
+  //             );
+  //             return { success: false, handled: true };
+  //           }
+  //           const tasks = projectData.tasks;
+  //           if (taskIndex > 0 && taskIndex <= tasks.length) {
+  //             await taskService.showTaskDetails(phoneNumber, taskIndex);
+  //           } else {
+  //             await whatsappService.sendMessage(
+  //               phoneNumber,
+  //               `❌ Invalid task number. Please select between 1-${tasks.length}.`,
+  //             );
+  //           }
+  //           return { success: true, handled: true };
+  //         }
+
+  //         // ── Text commands ────────────────────────────────────────────
+  //         if (/^projects$/i.test(messageText)) {
+  //           await projectService.listProjects(phoneNumber, 1);
+  //           return { success: true, handled: true };
+  //         }
+
+  //         if (/^help$/i.test(messageText)) {
+  //           await whatsappService.sendMessage(
+  //             phoneNumber,
+  //             "📋 Available commands:\n" +
+  //               "• Type 'projects' to view all projects\n" +
+  //               "• Type 'menu' for main menu\n" +
+  //               "• Type 'cancel' to exit current flow",
+  //           );
+  //           return { success: true, handled: true };
+  //         }
+
+  //         if (/^menu$/i.test(messageText)) {
+  //           await userService.handleUserMessage(message);
+  //           return { success: true, handled: true };
+  //         }
+
+  //         if (/^(cancel|exit|stop|quit)$/i.test(messageText)) {
+  //           await sessionService.closeConnection(phoneNumber);
+  //           await usersQueries.clearLastMessage(phoneNumber);
+  //           await usersQueries
+  //             .update(
+  //               { phoneNumber },
+  //               {
+  //                 $unset: { "scope.activeSession": "", "scope.wsSession": "" },
+  //               },
+  //             )
+  //             .catch(() => {});
+  //           await whatsappService.sendMessage(
+  //             phoneNumber,
+  //             `❌ ${selectedLanguageText.cancelSession}`,
+  //           );
+  //           return { success: true, handled: true };
+  //         }
+
+  //         if (lastMessage?.flow === "improvement_project") {
+  //           if (/^(submit|done|complete)$/i.test(messageText)) {
+  //             await projectSubmissionService.submitImprovementProject(
+  //               phoneNumber,
+  //             );
+  //             return { success: true, handled: true };
+  //           }
+  //         }
+  //       }
+  //     }
+
+  //     // ============================================
+  //     // STEP 5: Fallback – user auth / registration check
+  //     // ============================================
+  //     return await userService.handleUserMessage(message);
+  //   } catch (error) {
+  //     Logger.error("Flow routing error", error);
+  //     await usersQueries.clearLastMessage(message.from);
+  //     return { success: false, handled: false, error: error.message };
+  //   }
+  // }
+
+  // ─────────────────────────────────────────────────────────────────
+  // Handle "Continue" from inactivity / disconnect prompt (req #2)
+  //
+  // Re-opens the WS with the SAME sessionId stored in activeSession.
+  // Mohini's authenticate frame re-attaches to the paused session.
+  // ─────────────────────────────────────────────────────────────────
+ 
+ async route(message) {
+  try {
+    const phoneNumber = message.from;
+
+    const keys = [
+      "evidenceLimit",
+      "requestNextPhoto",
+      "done",
+      "cancelEvidenceUpload",
+      "lostSession",
+      "cancelSession",
+      "editStoryText",
+      "voiceEditPrompt",
+      "voiceRetryPrompt",
+      "voiceSend",
+      "voiceEdit",
+      "voiceRetry",
+      "voiceSent",
+      "voiceSendFailed",
+      "voiceNoPending",
+      "voiceNoTranscript",
+    ];
+    const selectedLanguageText = await languageService.tBatch(phoneNumber, keys);
+
+    // ============================================
+    // STEP 0: Track user activity
+    // ============================================
+    await inactivityReminderService.trackUserActivity(phoneNumber);
+
+    // ============================================
+    // STEP 0.5: Handle media evidence upload (existing flow)
+    // ============================================
+    const lastMessage = await usersQueries.getLastMessage(phoneNumber);
+
+    if (
+      lastMessage?.context?.uploadingEvidence &&
+      this.isMediaMessage(message)
+    ) {
+      return await this.handleMediaUpload(message, phoneNumber);
+    }
+
+    // ============================================
+    // STEP 0.6: Handle image uploads during post-session photo flow
+    // ============================================
+    if (
+      lastMessage?.flow === "post_session_upload" &&
+      message.type === "image"
+    ) {
+      return await storyPostSessionService.handlePhotoUpload(
         phoneNumber,
-        hasActiveFlow: !!lastMessage?.flow,
-        currentFlow: lastMessage?.flow || "none",
-        currentStep: lastMessage?.step || 0,
-        messageType: message.type,
-      });
+        message,
+      );
+    }
 
-      // ============================================
-      // STEP 2.5:  Handle Voice Messages (AI Transcription)
-      // ============================================
-      if (message.type === "audio" || message.type === "voice") {
-        return await this.handleVoiceMessage(message, phoneNumber);
+    const messageText = message.text?.body?.trim() || "";
+
+    Logger.info("Flow routing check", {
+      phoneNumber,
+      hasActiveFlow: !!lastMessage?.flow,
+      currentFlow: lastMessage?.flow || "none",
+      currentStep: lastMessage?.step || 0,
+      messageType: message.type,
+    });
+
+    // ============================================
+    // STEP 1: Voice messages
+    // ============================================
+    if (message.type === "audio" || message.type === "voice") {
+      return await this.handleVoiceMessage(message, phoneNumber);
+    }
+
+    // ============================================
+    // STEP 2: Extract interactive responses
+    // ============================================
+    const buttonResponse =
+      message?.interactive?.buttons_reply?.id ||
+      message?.reply?.buttons_reply?.id ||
+      message?.buttons_reply?.id;
+
+    const listResponse =
+      message?.interactive?.list_reply?.id ||
+      message?.reply?.list_reply?.id ||
+      message?.list_reply?.id;
+
+    let selectedAction = buttonResponse || listResponse;
+    if (selectedAction) {
+      selectedAction = selectedAction
+        .replace(/^ButtonsV3:/, "")
+        .replace(/^ListV3:/, "");
+    }
+
+    Logger.debug("Extracted actions", {
+      buttonResponse,
+      listResponse,
+      selectedAction,
+    });
+
+    // ============================================
+    // STEP 3: Route interactive actions
+    // ============================================
+    if (selectedAction) {
+      // ── Session inactivity: user wants to CONTINUE ──────────────
+      if (selectedAction === "session_continue") {
+        return await this.handleSessionContinue(phoneNumber);
       }
 
-      // ============================================
-      // STEP 2.6: Handle Natural Language with AI (before button clicks)
-      // ============================================
-      // if (messageText && !selectedAction) {
-      //   // Skip AI for simple commands
-      //   const skipAI =
-      //     /^(projects|help|menu|cancel|exit|stop|quit|done|finish|complete|next)$/i;
-
-      //   if (!skipAI.test(messageText)) {
-      //     Logger.info("Attempting AI processing", {
-      //       phoneNumber,
-      //       text: messageText.substring(0, 30),
-      //     });
-
-      //     const aiResult = await this.handleNaturalLanguageInput(
-      //       message,
-      //       phoneNumber,
-      //       messageText
-      //     );
-
-      //     if (aiResult.handled) {
-      //       return aiResult;
-      //     }
-      //   }
-      // }
-
-      // ============================================
-      // STEP 2: Extract interactive responses
-      // ============================================
-      const buttonResponse =
-        message?.interactive?.buttons_reply?.id ||
-        message?.reply?.buttons_reply?.id ||
-        message?.buttons_reply?.id;
-
-      const listResponse =
-        message?.interactive?.list_reply?.id ||
-        message?.reply?.list_reply?.id ||
-        message?.list_reply?.id;
-
-      let selectedAction = buttonResponse || listResponse;
-
-      if (selectedAction) {
-        selectedAction = selectedAction
-          .replace(/^ButtonsV3:/, "")
-          .replace(/^ListV3:/, "");
+      // ── Session inactivity / disconnect: user wants NEW session ─
+      if (selectedAction === "session_new") {
+        return await this.handleSessionNew(phoneNumber, message);
       }
 
-      Logger.debug("Extracted actions", {
-        buttonResponse,
-        listResponse,
-        selectedAction,
-      });
+      // ── Voice: user approved transcript ─────────────────────────
+      if (selectedAction === "voice_send") {
+        const lastMsg = await usersQueries.getLastMessage(phoneNumber);
+        const text = lastMsg?.context?.pendingText;
 
-      // ============================================
-      // STEP 3: Route interactive actions
-      // ============================================
-      if (selectedAction) {
-        // Program selection
-        if (
-          selectedAction.startsWith("program_") &&
-          selectedAction !== "main_menu"
-        ) {
-          const programId = selectedAction.replace("program_", "");
-          await programService.handleProgramSelection(
-            phoneNumber,
-            programId,
-            message
-          );
-          return { success: true, handled: true };
-        }
-
-        // Report type selection
-        if (selectedAction.startsWith("report_type_")) {
-          const reportType = parseInt(
-            selectedAction.replace("report_type_", "")
-          );
-          await programService.handleReportTypeSelection(
-            phoneNumber,
-            reportType
-          );
-          return { success: true, handled: true };
-        }
-
-        // Program pagination
-        if (
-          selectedAction.startsWith("next_programs_") ||
-          selectedAction.startsWith("prev_programs_")
-        ) {
-          let page = 1;
-          if (selectedAction.startsWith("next_programs_")) {
-            page = parseInt(selectedAction.replace("next_programs_", ""));
-          } else {
-            page = parseInt(selectedAction.replace("prev_programs_", ""));
-          }
-          await programService.handleProgramPagination(phoneNumber, null, page);
-          return { success: true, handled: true };
-        }
-
-        // Project pagination
-        if (
-          selectedAction.startsWith("next_projects_") ||
-          selectedAction.startsWith("prev_projects_")
-        ) {
-          await projectService.handleProjectPagination(
-            phoneNumber,
-            selectedAction
-          );
-          return { success: true, handled: true };
-        }
-
-        // Start improvement project
-        if (selectedAction.startsWith("start_improvement_")) {
-          const solutionId = selectedAction.replace("start_improvement_", "");
-          const lastMsg = await usersQueries.getLastMessage(phoneNumber);
-          const projectData = lastMsg?.context?.project;
-          await projectService.handleStartImprovementProject(
-            phoneNumber,
-            solutionId,
-            projectData
-          );
-          return { success: true, handled: true };
-        }
-
-        // View tasks
-        if (selectedAction.startsWith("view_tasks_")) {
-          const projectId = selectedAction.replace("view_tasks_", "");
-          const projectData = await Project.findOne(
-            { projectId, phoneNumber },
-            { tasks: 1, projectName: 1, projectData: 1 }
-          ).lean();
-
-          if (!projectData) {
-            await whatsappService.sendMessage(
-              phoneNumber,
-              "❌ Project not found. Please select project again."
-            );
-            return { success: false, handled: true };
-          }
-          await taskService.showTasksMenu(phoneNumber, projectData);
-          return { success: true, handled: true };
-        }
-
-        // Update tasks
-        if (selectedAction.startsWith("update_task_")) {
-          const projectId = selectedAction.replace("update_task_", "");
-          const projectData = await Project.findOne(
-            { projectId, phoneNumber },
-            { tasks: 1, projectName: 1, projectData: 1 }
-          ).lean();
-
-          if (!projectData) {
-            await whatsappService.sendMessage(
-              phoneNumber,
-              "❌ Project not found. Please select project again."
-            );
-            return { success: false, handled: true };
-          }
-          await taskService.showTaskSummary(phoneNumber, projectData.tasks, 1);
-          return { success: true, handled: true };
-        }
-
-        // View task resources
-        if (selectedAction.startsWith("view_resources_")) {
-          const taskIndex = parseInt(
-            selectedAction.replace("view_resources_", "")
-          );
-          await taskService.showTaskResources(phoneNumber, taskIndex);
-          return { success: true, handled: true };
-        }
-
-        // Update task status menu
-        if (selectedAction.startsWith("updated_task_status_")) {
-          const taskIndex = parseInt(
-            selectedAction.replace("updated_task_status_", "")
-          );
-          await taskService.showStatusUpdateMenu(phoneNumber, taskIndex);
-          return { success: true, handled: true };
-        }
-
-        // Set task status
-        if (selectedAction.startsWith("set_status_")) {
-          const parts = selectedAction.replace("set_status_", "").split("_");
-          const taskIndex = parseInt(parts[parts.length - 1]);
-          const newStatus = parts.slice(0, -1).join("_");
-          await taskService.handleStatusUpdate(
-            phoneNumber,
-            taskIndex,
-            newStatus
-          );
-          return { success: true, handled: true };
-        }
-
-        // Upload evidence
-        if (selectedAction.startsWith("upload_evidence_")) {
-          const taskIndex = parseInt(
-            selectedAction.replace("upload_evidence_", "")
-          );
-          await taskService.handleEvidenceUploadPrompt(phoneNumber, taskIndex);
-          return { success: true, handled: true };
-        }
-
-        // Task pagination
-        if (
-          selectedAction.startsWith("tasks_next_") ||
-          selectedAction.startsWith("tasks_prev_")
-        ) {
-          let page = 1;
-          if (selectedAction.startsWith("tasks_next_")) {
-            page = parseInt(selectedAction.replace("tasks_next_", ""));
-          } else {
-            page = parseInt(selectedAction.replace("tasks_prev_", ""));
-          }
-          await taskService.handleTaskPagination(phoneNumber, null, page);
-          return { success: true, handled: true };
-        }
-
-        // Project selection
-        if (
-          selectedAction.includes("solutionWithProject_") ||
-          selectedAction.includes("solutionWithoutProject_")
-        ) {
-          await projectService.showProjectDetails(phoneNumber, message);
-          return { success: true, handled: true };
-        }
-
-        // Project pagination
-        if (
-          selectedAction.startsWith("next_page_") ||
-          selectedAction.startsWith("prev_page_")
-        ) {
-          await projectService.handleInteractiveResponse(
-            phoneNumber,
-            selectedAction
-          );
-          return { success: true, handled: true };
-        }
-
-        if (selectedAction.startsWith("view_report_")) {
-          const projectId = selectedAction.replace("view_report_", "");
-          await projectService.generateProjectReport(phoneNumber, projectId);
-          return;
-        }
-
-        // Handle View Certificate
-        if (selectedAction.startsWith("view_certificate_")) {
-          const projectId = selectedAction.replace("view_certificate_", "");
-          const lastMessage = await usersQueries.getLastMessage(phoneNumber);
-          const project = lastMessage?.context?.project;
-
-          await projectService.showCertificateOptions(phoneNumber, project);
-          return;
-        }
-
-        // Handle Certificate Format Selection
-        if (selectedAction.startsWith("cert_pdf_")) {
-          const projectId = selectedAction.replace("cert_pdf_", "");
-          await projectService.sendCertificate(phoneNumber, projectId, "pdf");
-          return;
-        }
-
-        if (selectedAction.startsWith("cert_svg_")) {
-          const projectId = selectedAction.replace("cert_svg_", "");
-          await projectService.sendCertificate(phoneNumber, projectId, "svg");
-          return;
-        }
-
-        // ============================================
-        // EXACT ACTION MATCHES
-        // ============================================
-        switch (selectedAction) {
-          case "view_analytics":
-            await programService.showAnalyticsMenu(phoneNumber);
-            return { success: true, handled: true };
-
-          case "view_program_report":
-            await programService.listPrograms(phoneNumber, 1);
-            return { success: true, handled: true };
-
-          case "start_new_project":
-            await usersQueries.updateLastMessage(phoneNumber, {
-              flow: "project_creation",
-              step: 0,
-              context: {},
-              text: "start_new_project",
-            });
-            await projectService.startNewProjectFlow(phoneNumber);
-            return { success: true, handled: true };
-
-          case "update_existing_project":
-            await inactivityReminderService.resetReminderCount(phoneNumber);
-            await projectService.listProjects(phoneNumber, 1);
-            return { success: true, handled: true };
-
-          case "record_story":
-            await storyService.startStoryRecording(phoneNumber);
-            return { success: true, handled: true };
-
-          case "record_another_story":
-            await storyService.handleRecordAnotherStory(phoneNumber);
-            return { success: true, handled: true };
-
-          case "submit_improvement_project":
-            await projectSubmissionService.submitImprovementProject(
-              phoneNumber
-            );
-            return { success: true, handled: true };
-
-          case "view_certificate":
-            await projectSubmissionService.handleViewCertificate(phoneNumber);
-            return { success: true, handled: true };
-
-          case "share_certificate":
-            await projectSubmissionService.handleShareCertificate(phoneNumber);
-            return { success: true, handled: true };
-
-          case "dismiss_reminder":
-            await inactivityReminderService.handleReminderDismissal(
-              phoneNumber
-            );
-            await whatsappService.sendMessage(
-              phoneNumber,
-              "✅ Reminder dismissed. Let me know if you need help!"
-            );
-            await inactivityReminderService.resetReminderCount(phoneNumber);
-            return { success: true, handled: true };
-
-          case "check_project_status":
-            await inactivityReminderService.resetReminderCount(phoneNumber);
-            await projectService.listProjects(phoneNumber, 1);
-            return { success: true, handled: true };
-
-          case "back_to_list":
-            await projectService.handleBackToList(phoneNumber);
-            return { success: true, handled: true };
-
-          case "back_to_tasks":
-            const msg = await usersQueries.getLastMessage(phoneNumber);
-            const projectId = msg?.context?.projectId;
-            const projectData = await Project.findOne(
-              { projectId, phoneNumber },
-              { tasks: 1, projectName: 1, projectData: 1 }
-            ).lean();
-
-            if (!projectData) {
-              await whatsappService.sendMessage(
-                phoneNumber,
-                "❌ Project not found. Please select project again."
-              );
-              return { success: false, handled: true };
-            }
-            await taskService.showTaskSummary(
-              phoneNumber,
-              projectData?.tasks || [],
-              1
-            );
-            return { success: true, handled: true };
-
-          case "back_to_project":
-            const lastMsg = await usersQueries.getLastMessage(phoneNumber);
-            if (lastMsg?.context?.project) {
-              await projectService.showProjectDetails(
-                phoneNumber,
-                lastMsg.context.project
-              );
-            } else {
-              await projectService.listProjects(phoneNumber, 1);
-            }
-            return { success: true, handled: true };
-
-          case "main_menu":
-            await userService.handleUserMessage(message);
-            return { success: true, handled: true };
-
-          default:
-            await whatsappService.sendMessage(
-              phoneNumber,
-              "❌ Sorry, I didn't recognize that option. Please try again."
-            );
-            return { success: true, handled: true };
-        }
-      }
-
-      // ============================================
-      // STEP 4: Handle text input
-      // ============================================
-      if (messageText) {
-        // Handle evidence upload completion
-        if (lastMessage?.context?.uploadingEvidence) {
-          if (/^(done|finish|complete|next)$/i.test(messageText)) {
-            return await this.handleEvidenceUploadComplete(phoneNumber);
-          }
-
-          if (/^(cancel|exit)$/i.test(messageText)) {
-            await usersQueries.updateLastMessage(phoneNumber, {
-              flow: "project_tasks",
-              step: 2,
-              context: {
-                projectId: lastMessage.context.projectId,
-                currentTaskIndex: lastMessage.context.currentTaskIndex,
-                uploadingEvidence: false,
-              },
-              text: "cancel_evidence_upload",
-            });
-            await whatsappService.sendMessage(
-              phoneNumber,
-              "❌ Evidence upload cancelled."
-            );
-            return { success: true, handled: true };
-          }
-        }
-
-        // Task number selection
-        if (
-          lastMessage?.flow === "project_tasks" &&
-          /^\d+$/.test(messageText)
-        ) {
-          const taskIndex = parseInt(messageText);
-          const lastMsg = await usersQueries.getLastMessage(phoneNumber);
-          const projectId = lastMsg?.context?.projectId;
-          const projectData = await Project.findOne(
-            { projectId, phoneNumber },
-            { tasks: 1, projectName: 1, projectData: 1 }
-          ).lean();
-
-          if (!projectData) {
-            await whatsappService.sendMessage(
-              phoneNumber,
-              "❌ Project not found. Please select project again."
-            );
-            return { success: false, handled: true };
-          }
-          const tasks = projectData.tasks;
-          if (taskIndex > 0 && taskIndex <= tasks.length) {
-            await taskService.showTaskDetails(phoneNumber, taskIndex);
-            return { success: true, handled: true };
-          } else {
-            await whatsappService.sendMessage(
-              phoneNumber,
-              `❌ Invalid task number. Please select between 1-${tasks.length}.`
-            );
-            return { success: true, handled: true };
-          }
-        }
-
-        // Text commands
-        if (/^projects$/i.test(messageText)) {
-          await projectService.listProjects(phoneNumber, 1);
-          return { success: true, handled: true };
-        }
-
-        if (/^help$/i.test(messageText)) {
+        if (!text) {
+          Logger.warn("voice_send: no pendingText in context", { phoneNumber });
           await whatsappService.sendMessage(
             phoneNumber,
-            "📋 Available commands:\n" +
-              "• Type 'projects' to view all projects\n" +
-              "• Type 'menu' for main menu\n" +
-              "• Type 'cancel' to exit current flow"
+            `❌ ${selectedLanguageText.voiceNoPending}`,
           );
-          return { success: true, handled: true };
+          return { success: false, handled: true };
         }
 
-        if (/^menu$/i.test(messageText)) {
-          await userService.handleUserMessage(message);
-          return { success: true, handled: true };
-        }
+        const sent = await sessionService.sendMessage(phoneNumber, text);
 
-        if (/^(cancel|exit|stop|quit)$/i.test(messageText)) {
-          await usersQueries.clearLastMessage(phoneNumber);
+        if (sent) {
+          await usersQueries.updateLastMessage(phoneNumber, {
+            flow: null,
+            context: {},
+            text: "voice_sent",
+          });
           await whatsappService.sendMessage(
             phoneNumber,
-            "❌ Cancelled. Type 'menu' to see options."
+            `✅ ${selectedLanguageText.voiceSent}`,
           );
-          return { success: true, handled: true };
+          Logger.info("voice_send: transcript forwarded to WS", { phoneNumber, text });
+        } else {
+          Logger.warn("voice_send: WS send failed", { phoneNumber });
+          await whatsappService.sendMessage(
+            phoneNumber,
+            `❌ ${selectedLanguageText.voiceSendFailed}`,
+          );
         }
 
-        // Check if in improvement project mode
-        if (lastMessage?.flow === "improvement_project") {
-          if (/^(submit|done|complete)$/i.test(messageText)) {
-            await projectSubmissionService.submitImprovementProject(
-              phoneNumber
-            );
-            return { success: true, handled: true };
+        return {
+          success: sent,
+          handled: true,
+          route: sent ? "ws-voice-forwarded" : "ws-send-failed",
+        };
+      }
+
+      // ── Voice: user wants to edit transcript ────────────────────
+      if (selectedAction === "voice_edit") {
+        const lastMsg = await usersQueries.getLastMessage(phoneNumber);
+
+        if (!lastMsg?.context?.pendingText) {
+          Logger.warn("voice_edit: no pendingText in context", { phoneNumber });
+          await whatsappService.sendMessage(
+            phoneNumber,
+            `❌ ${selectedLanguageText.voiceNoTranscript}`,
+          );
+          return { success: false, handled: true };
+        }
+
+        await usersQueries.updateLastMessage(phoneNumber, {
+          flow: "voice_edit",
+          context: lastMsg.context, // preserve pendingText for reference
+          text: "voice_edit_pending",
+        });
+
+        await whatsappService.sendMessage(
+          phoneNumber,
+          `✏️ ${selectedLanguageText.voiceEditPrompt}`,
+        );
+
+        Logger.info("voice_edit: waiting for user to type correction", { phoneNumber });
+        return { success: true, handled: true, route: "ws-voice-edit" };
+      }
+
+      // ── Voice: retry recording ──────────────────────────────────
+      if (selectedAction === "voice_retry") {
+        await usersQueries.updateLastMessage(phoneNumber, {
+          flow: null,
+          context: {},
+          text: "voice_retry",
+        });
+
+        await whatsappService.sendMessage(
+          phoneNumber,
+          `🔄 ${selectedLanguageText.voiceRetryPrompt}`,
+        );
+
+        Logger.info("voice_retry: user asked to resend voice note", { phoneNumber });
+        return { success: true, handled: true, route: "ws-voice-retry" };
+      }
+
+      // ── Post-session: user wants to upload photos ───────────────
+      if (selectedAction === "post_upload_yes") {
+        await whatsappService.sendMessage(
+          phoneNumber,
+          `📷 ${selectedLanguageText.evidenceLimit}\n\n` +
+            `${selectedLanguageText.done}`,
+        );
+        return { success: true, handled: true };
+      }
+
+      // ── Post-session: user adds more photos (acknowledged) ──────
+      if (selectedAction === "post_upload_more") {
+        await whatsappService.sendMessage(
+          phoneNumber,
+          `📷 ${selectedLanguageText.requestNextPhoto}`,
+        );
+        return { success: true, handled: true };
+      }
+
+      // ── Post-session: user finished uploading or skipped ────────
+      if (
+        selectedAction === "post_upload_done" ||
+        selectedAction === "post_upload_skip"
+      ) {
+        return await storyPostSessionService.handleUploadDone(phoneNumber);
+      }
+
+      // ── Report: download ────────────────────────────────────────
+      if (selectedAction === "download_report") {
+        return await storyPostSessionService.handleDownloadReport(phoneNumber);
+      }
+
+      // ── Report: edit ────────────────────────────────────────────
+      if (selectedAction === "edit_report") {
+        return await storyPostSessionService.handleEditReport(phoneNumber);
+      }
+
+      // ── Language selection ──────────────────────────────────────
+      if (languageService.isLanguageButton(selectedAction)) {
+        return await this.handleLanguageSelection(phoneNumber, selectedAction);
+      }
+
+      // ── Main menu session starters ──────────────────────────────
+      if (selectedAction === "capture_discussion") {
+        return await this.handleSessionStart(phoneNumber, "discussion", message);
+      }
+
+      if (selectedAction === "record_story") {
+        return await this.handleSessionStart(phoneNumber, "story", message);
+      }
+
+      // ── Forward Mohini option replies over WS ───────────────────
+      if (selectedAction.startsWith("mohini_opt_")) {
+        const value = selectedAction.split("_").slice(3).join("_");
+        const sent = sessionService.sendMessage(phoneNumber, value);
+        if (!sent) {
+          await whatsappService.sendMessage(
+            phoneNumber,
+            `⚠️ ${selectedLanguageText.lostSession}`,
+          );
+        }
+        return { success: true, handled: true };
+      }
+    }
+
+    // ============================================
+    // STEP 4: Text messages
+    // ============================================
+    if (messageText) {
+      // ── "done"/"skip" text during post-session photo-upload flow ─
+      if (
+        lastMessage?.flow === "post_session_upload" &&
+        /^(done|skip|finish|complete)$/i.test(messageText)
+      ) {
+        return await storyPostSessionService.handleUploadDone(phoneNumber);
+      }
+
+      // ── User is editing a voice transcription ────────────────────
+      if (lastMessage?.flow === "voice_edit") {
+        Logger.info("voice_edit: corrected text received – forwarding to WS", {
+          phoneNumber,
+          text: messageText,
+        });
+
+        const sent = sessionService.sendMessage(phoneNumber, messageText);
+
+        await usersQueries.updateLastMessage(phoneNumber, {
+          flow: null,
+          context: {},
+          text: "voice_edit_sent",
+        });
+
+        if (!sent) {
+          Logger.warn("voice_edit: WS send failed – falling back", { phoneNumber });
+          const result = await flowRouter.route(message);
+          return { ...result, route: "flowrouter-voice-edit-fallback" };
+        }
+
+        Logger.info("voice_edit: corrected text forwarded to Mohini WS", { phoneNumber });
+        return { success: true, handled: true, route: "ws-voice-edit-forwarded" };
+      }
+
+      // ── Forward text to active Mohini WS session ─────────────────
+      if (sessionService.isConnected(phoneNumber)) {
+        // Still honour cancel / exit even inside a session
+        if (/^(cancel|exit|stop|quit|menu)$/i.test(messageText)) {
+          Logger.info("Cancel keyword inside WS session", { phoneNumber });
+          // fall through to cancel handler below
+        } else {
+          const sent = sessionService.sendMessage(phoneNumber, messageText);
+          if (sent) {
+            Logger.info("Text forwarded to Mohini WS", { phoneNumber });
+            return { success: true, handled: true, route: "ws-forwarded" };
           }
         }
       }
 
-      // ============================================
-      // STEP 5: User authentication/registration check
-      // ============================================
-      return await userService.handleUserMessage(message);
+      // ── Evidence upload flow ──────────────────────────────────────
+      if (lastMessage?.context?.uploadingEvidence) {
+        if (/^(done|finish|complete|next)$/i.test(messageText)) {
+          return await this.handleEvidenceUploadComplete(phoneNumber);
+        }
+        if (/^(cancel|exit)$/i.test(messageText)) {
+          await usersQueries.updateLastMessage(phoneNumber, {
+            flow: "project_tasks",
+            step: 2,
+            context: {
+              projectId: lastMessage.context.projectId,
+              currentTaskIndex: lastMessage.context.currentTaskIndex,
+              uploadingEvidence: false,
+            },
+            text: "cancel_evidence_upload",
+          });
+          await whatsappService.sendMessage(
+            phoneNumber,
+            `❌ ${selectedLanguageText.cancelEvidenceUpload}`,
+          );
+          return { success: true, handled: true };
+        }
+      }
+
+      // ── Task number selection ─────────────────────────────────────
+      if (
+        lastMessage?.flow === "project_tasks" &&
+        /^\d+$/.test(messageText)
+      ) {
+        const taskIndex = parseInt(messageText);
+        const lastMsg = await usersQueries.getLastMessage(phoneNumber);
+        const projectId = lastMsg?.context?.projectId;
+        const projectData = await Project.findOne(
+          { projectId, phoneNumber },
+          { tasks: 1, projectName: 1, projectData: 1 },
+        ).lean();
+        if (!projectData) {
+          await whatsappService.sendMessage(
+            phoneNumber,
+            "❌ Project not found. Please select project again.",
+          );
+          return { success: false, handled: true };
+        }
+        const tasks = projectData.tasks;
+        if (taskIndex > 0 && taskIndex <= tasks.length) {
+          await taskService.showTaskDetails(phoneNumber, taskIndex);
+        } else {
+          await whatsappService.sendMessage(
+            phoneNumber,
+            `❌ Invalid task number. Please select between 1-${tasks.length}.`,
+          );
+        }
+        return { success: true, handled: true };
+      }
+
+      // ── Text commands ─────────────────────────────────────────────
+      if (/^projects$/i.test(messageText)) {
+        await projectService.listProjects(phoneNumber, 1);
+        return { success: true, handled: true };
+      }
+
+      if (/^help$/i.test(messageText)) {
+        await whatsappService.sendMessage(
+          phoneNumber,
+          "📋 Available commands:\n" +
+            "• Type 'projects' to view all projects\n" +
+            "• Type 'menu' for main menu\n" +
+            "• Type 'cancel' to exit current flow",
+        );
+        return { success: true, handled: true };
+      }
+
+      if (/^menu$/i.test(messageText)) {
+        await userService.handleUserMessage(message);
+        return { success: true, handled: true };
+      }
+
+      if (/^(cancel|exit|stop|quit)$/i.test(messageText)) {
+        await sessionService.closeConnection(phoneNumber);
+        await usersQueries.clearLastMessage(phoneNumber);
+        await usersQueries
+          .update(
+            { phoneNumber },
+            { $unset: { "scope.activeSession": "", "scope.wsSession": "" } },
+          )
+          .catch(() => {});
+        await whatsappService.sendMessage(
+          phoneNumber,
+          `❌ ${selectedLanguageText.cancelSession}`,
+        );
+        return { success: true, handled: true };
+      }
+
+      if (lastMessage?.flow === "improvement_project") {
+        if (/^(submit|done|complete)$/i.test(messageText)) {
+          await projectSubmissionService.submitImprovementProject(phoneNumber);
+          return { success: true, handled: true };
+        }
+      }
+    }
+
+    // ============================================
+    // STEP 5: Fallback – user auth / registration check
+    // ============================================
+    return await userService.handleUserMessage(message);
+  } catch (error) {
+    Logger.error("Flow routing error", error);
+    await usersQueries.clearLastMessage(message.from);
+    return { success: false, handled: false, error: error.message };
+  }
+}
+ 
+  async handleSessionContinue(phoneNumber) {
+    try {
+      Logger.info("User chose to continue session", { phoneNumber });
+
+      const keys = ["sessionLost"];
+      const selectedLanguageText = await languageService.tBatch(
+        phoneNumber,
+        keys,
+      );
+
+      const result = await sessionService.reconnect(phoneNumber);
+
+      if (!result.success) {
+        // Could not reconnect – show main menu
+        await whatsappService.sendMessage(
+          phoneNumber,
+          `⚠️ ${selectedLanguageText.sessionLost}`,
+        );
+        const user = await usersQueries.findOne({ phoneNumber });
+        const message = {
+          from: phoneNumber,
+          type: "text",
+          text: { body: "menu" },
+        };
+        await userService.handleUserMessage(message);
+      }
+
+      return {
+        success: result.success,
+        handled: true,
+        route: "session-reconnected",
+      };
     } catch (error) {
-      Logger.error("Flow routing error", error);
-      await usersQueries.clearLastMessage(message.from);
-      return { success: false, handled: false, error: error.message };
+      Logger.error("handleSessionContinue error", {
+        phoneNumber,
+        error: error.message,
+      });
+      return { success: false, handled: true };
     }
   }
 
-  /**
-   * Handle media upload for evidence
-   */
-  async handleMediaUpload(message, phoneNumber) {
+  // ─────────────────────────────────────────────────────────────────
+  // Handle "New Session" from inactivity / disconnect prompt (req #2)
+  //
+  // Terminates the old WS, clears session state, and shows the user
+  // the main menu so they can pick a fresh session type.
+  // ─────────────────────────────────────────────────────────────────
+  async handleSessionNew(phoneNumber, originalMessage) {
     try {
-      Logger.info("Processing evidence upload", {
-        phoneNumber,
-        type: message.type,
-      });
+      Logger.info("User chose to start a new session", { phoneNumber });
 
-      const result = await fileUploadService.handleEvidenceUpload(
+      const keys = ["newSessionStarted"];
+      const selectedLanguageText = await languageService.tBatch(
         phoneNumber,
-        message
+        keys,
       );
 
-      return { success: result.success, handled: true };
-    } catch (error) {
-      Logger.error("Media upload handling error", error);
+      // Close the old WS without triggering post-session (not completed)
+      await sessionService.closeConnection(phoneNumber);
+
+      // Wipe session data from MongoDB
+      await usersQueries
+        .update(
+          { phoneNumber },
+          { $unset: { "scope.activeSession": "", "scope.wsSession": "" } },
+        )
+        .catch(() => {});
+
+      await usersQueries.clearLastMessage(phoneNumber);
+
       await whatsappService.sendMessage(
         phoneNumber,
-        "❌ Failed to upload evidence. Please try again later."
+        `🔄 ${selectedLanguageText.newSessionStarted}`,
       );
-      return { success: false, handled: true, error: error.message };
+
+      // Route to main menu
+      const menuMessage = {
+        ...originalMessage,
+        type: "text",
+        text: { body: "menu" },
+      };
+      await userService.handleUserMessage(menuMessage);
+
+      return { success: true, handled: true, route: "session-new" };
+    } catch (error) {
+      Logger.error("handleSessionNew error", {
+        phoneNumber,
+        error: error.message,
+      });
+      return { success: false, handled: true };
     }
   }
 
-  /**
-   * Handle evidence upload completion
-   */
+  // ─────────────────────────────────────────────────────────────────
+  // Language selection handler
+  // ─────────────────────────────────────────────────────────────────
+  async handleLanguageSelection(phoneNumber, langButtonId) {
+    try {
+      Logger.info("Language selected", { phoneNumber, langButtonId });
+
+      await whatsappService.sendMessage(
+        phoneNumber,
+        "⏳ Setting up your language...",
+      );
+
+      const { langLabel } = await languageService.fetchAndStore(
+        phoneNumber,
+        langButtonId,
+      );
+
+      Logger.info("Translations stored", { phoneNumber, langLabel });
+
+      await usersQueries.updateLastMessage(phoneNumber, {
+        flow: "main_menu",
+        step: 0,
+        context: { language: langLabel },
+        text: langButtonId,
+      });
+
+      const mainMenuMsg =
+        await languageService.buildMainMenuMessage(phoneNumber);
+      await whatsappService.sendInteractiveMessage(mainMenuMsg);
+
+      return { success: true, handled: true, stage: "main_menu" };
+    } catch (error) {
+      Logger.error("Language selection failed", {
+        phoneNumber,
+        error: error.message,
+      });
+      await whatsappService.sendMessage(
+        phoneNumber,
+        "❌ Could not load language. Please try again.",
+      );
+      return { success: false, handled: true };
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // Session start → WebSocket open
+  // ─────────────────────────────────────────────────────────────────
+  async handleSessionStart(phoneNumber, sessionType, message) {
+    try {
+      Logger.info("Starting Mohini session", { phoneNumber, sessionType });
+
+      // 1. Create REST session (profile + generate-session)
+      const sessionResult = await sessionService.createSession(
+        phoneNumber,
+        sessionType,
+      );
+      const keys = ["sessionDiscontinue"];
+      const selectedLanguageText = await languageService.tBatch(
+        phoneNumber,
+        keys,
+      );
+
+      if (!sessionResult.success) {
+        await whatsappService.sendMessage(
+          phoneNumber,
+          `❌ ${selectedLanguageText.sessionDiscontinue}`,
+        );
+        return { success: false, handled: true };
+      }
+
+      // 2. Open WebSocket – authenticate frame sent automatically on open
+      const wsResult = await sessionService.openConnection(
+        phoneNumber,
+        false,
+        sessionType,
+      );
+
+      if (!wsResult.success) {
+        await whatsappService.sendMessage(
+          phoneNumber,
+          `❌ ${selectedLanguageText.sessionDiscontinue}`,
+        );
+        return { success: false, handled: true };
+      }
+
+      // 3. Persist flow state
+      await usersQueries.updateLastMessage(phoneNumber, {
+        flow:
+          sessionType === "discussion"
+            ? "capture_discussion"
+            : "story_recording",
+        step: 1,
+        context: {
+          sessionId: sessionResult.session.sessionId,
+          profileId: sessionResult.session.profileId,
+          sessionType,
+        },
+        text: sessionType,
+      });
+
+      Logger.info("Session + WS active", {
+        phoneNumber,
+        sessionType,
+        sessionId: sessionResult.session.sessionId,
+      });
+
+      return { success: true, handled: true, stage: "session_active" };
+    } catch (error) {
+      Logger.error("Session start error", {
+        phoneNumber,
+        error: error.message,
+      });
+      await whatsappService.sendMessage(
+        phoneNumber,
+        `❌ ${selectedLanguageText.sessionDiscontinue}`,
+      );
+      return { success: false, handled: true };
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // Existing helpers
+  // ─────────────────────────────────────────────────────────────────
+  async handleMediaUpload(message, phoneNumber) {
+    try {
+      const result = await fileUploadService.handleEvidenceUpload(
+        phoneNumber,
+        message,
+      );
+      return { success: result.success, handled: true };
+    } catch (error) {
+      Logger.error("Media upload error", error);
+      const keys = ["imageUploadFailed"];
+      const selectedLanguageText = await languageService.tBatch(
+        phoneNumber,
+        keys,
+      );
+      await whatsappService.sendMessage(
+        phoneNumber,
+        `❌ ${selectedLanguageText.imageUploadFailed}`,
+      );
+      return { success: false, handled: true };
+    }
+  }
+
   async handleEvidenceUploadComplete(phoneNumber) {
     try {
       const result = await fileUploadService.finishEvidenceUpload(phoneNumber);
       return { success: result.success, handled: true };
     } catch (error) {
       Logger.error("Error completing evidence upload", error);
-      return { success: false, handled: true, error: error.message };
-    }
-  }
-
-  /**
-   * Check if message contains media
-   */
-  isMediaMessage(message) {
-    const mediaTypes = ["image", "video", "audio", "document"];
-    return mediaTypes.includes(message.type);
-  }
-
-  /**
-   * Get recent conversation history for context
-   */
-  async getConversationHistory(phoneNumber, limit = 5) {
-    try {
-      // You can implement this to store conversation history in MongoDB
-      // For now, return empty array
-      // TODO: Implement conversation history storage
-      return [];
-    } catch (error) {
-      Logger.error("Error getting conversation history", error);
-      return [];
-    }
-  }
-
-  /**
-   * Save message to conversation history
-   */
-  async saveToConversationHistory(phoneNumber, messageText, intent) {
-    try {
-      // TODO: Implement conversation history storage in MongoDB
-      // Store: phoneNumber, messageText, intent, timestamp
-      Logger.debug("Conversation history saved", {
-        phoneNumber,
-        intent: intent.intent,
-      });
-    } catch (error) {
-      Logger.error("Error saving conversation history", error);
-    }
-  }
-
-  /**
-   * Handle natural language input with AI intent detection
-   */
-  async handleNaturalLanguageInput(message, phoneNumber, messageText) {
-    try {
-      Logger.info("Processing natural language", {
-        phoneNumber,
-        text: messageText.substring(0, 50),
-      });
-
-      // Get user context
-      const lastMessage = await usersQueries.getLastMessage(phoneNumber);
-      const user = await usersQueries.findUserByPhone(phoneNumber);
-
-      // Get user's projects for context
-      const userProjects = await Project.find(
-        { phoneNumber },
-        { projectId: 1, projectName: 1, tasks: 1, submissionStatus: 1 }
-      ).lean();
-
-      // Build conversation context
-      const conversationContext = {
-        currentProject: lastMessage?.context?.projectId
-          ? userProjects.find(
-              (p) => p.projectId === lastMessage.context.projectId
-            )
-          : null,
-        currentTask: lastMessage?.context?.currentTaskIndex
-          ? {
-              taskNumber: lastMessage.context.currentTaskIndex,
-            }
-          : null,
-        projects: userProjects,
-        userName: user?.name,
-        lastFlow: lastMessage?.flow,
-      };
-
-      // Get conversation history (last 5 messages)
-      const conversationHistory = await this.getConversationHistory(
-        phoneNumber
-      );
-
-      // Analyze intent with AI
-      const intent = await aiService.analyzeUserIntent(
-        messageText,
-        conversationContext,
-        conversationHistory
-      );
-
-      Logger.info("AI intent detected", {
-        phoneNumber,
-        intent: intent.intent,
-        confidence: intent.confidence,
-        entities: intent.entities,
-      });
-
-      // Handle low confidence
-      if (intent.needsClarification || intent.confidence < 0.6) {
-        await whatsappService.sendMessage(
-          phoneNumber,
-          intent.clarificationQuestion ||
-            "🤔 I'm not sure I understood that. Could you please be more specific?\n\nType 'help' to see what I can do."
-        );
-        return { success: true, handled: true };
-      }
-
-      // Route to AI intent router
-      const aiIntentRouter = require("./aiIntentRouter");
-      const result = await aiIntentRouter.routeIntent(
-        phoneNumber,
-        intent,
-        conversationContext,
-        message
-      );
-
-      // Store in conversation history
-      await this.saveToConversationHistory(phoneNumber, messageText, intent);
-
-      return result;
-    } catch (error) {
-      Logger.error("Error processing natural language", error);
-
-      // Fallback to showing menu
-      await whatsappService.sendMessage(
-        phoneNumber,
-        "I encountered an error understanding your request. Type 'menu' to see available options."
-      );
-
       return { success: false, handled: true };
     }
   }
 
-  /**
-   * Handle voice message with transcription and AI intent detection
-   */
+  isMediaMessage(message) {
+    return ["image", "video", "audio", "document"].includes(message.type);
+  }
+
   async handleVoiceMessage(message, phoneNumber) {
     try {
-      Logger.info("Processing voice message", {
+      const keys = ["voiceProcessing"];
+      const selectedLanguageText = await languageService.tBatch(
         phoneNumber,
-        messageType: message.type,
-        hasAudioId: !!(message.audio?.id || message.voice?.id),
-      });
+        keys,
+      );
 
-      // Send immediate acknowledgment
       await whatsappService.sendMessage(
         phoneNumber,
-        "🎤 Processing your voice message..."
+        `🎤 ${selectedLanguageText.voiceProcessing}`,
       );
 
-      // Download audio from WhatsApp
-      const audioBuffer = await this.downloadWhatsAppAudio(message);
-
-      if (!audioBuffer) {
+      if (sessionService.isConnected(phoneNumber)) {
         await whatsappService.sendMessage(
           phoneNumber,
-          "❌ Failed to download voice message. Please try again or type your message."
+          "Please type your response for now.",
         );
-        return { success: false, handled: true };
+        return { success: true, handled: true };
       }
 
-      // Transcribe using AI service
-      const transcription = await aiService.transcribeVoice(
-        audioBuffer,
-        "audio/ogg"
-      );
-
-      if (!transcription.success || !transcription.text) {
-        await whatsappService.sendMessage(
-          phoneNumber,
-          "❌ Could not understand your voice message. Please try again or type your message."
-        );
-        return { success: false, handled: true };
-      }
-
-      const transcribedText = transcription.text.trim();
-
-      Logger.info("Voice message transcribed", {
-        phoneNumber,
-        text: transcribedText.substring(0, 100),
-        length: transcribedText.length,
-      });
-
-      // Show transcription to user for confirmation
-      await whatsappService.sendMessage(
-        phoneNumber,
-        `📝 *You said:*\n"${transcribedText}"\n\n⏳ Processing your request...`
-      );
-
-      // Process transcribed text as natural language
-      const result = await this.handleNaturalLanguageInput(
-        message,
-        phoneNumber,
-        transcribedText
-      );
-
-      return result;
+      return { success: true, handled: true };
     } catch (error) {
-      Logger.error("Error handling voice message", error);
-
-      await whatsappService.sendMessage(
-        phoneNumber,
-        "❌ Error processing voice message. Please try typing your message instead."
-      );
-
+      Logger.error("Voice handling error", error);
       return { success: false, handled: true };
-    }
-  }
-
-  /**
-   * Download audio from WhatsApp via Whapi Cloud
-   */
-  async downloadWhatsAppAudio(message) {
-    try {
-      // Get audio/voice ID from message
-      const audioId = message.audio?.id || message.voice?.id;
-
-      if (!audioId) {
-        Logger.error("No audio ID found in message", {
-          messageType: message.type,
-          hasAudio: !!message.audio,
-          hasVoice: !!message.voice,
-        });
-        return null;
-      }
-
-      Logger.info("Downloading WhatsApp audio", { audioId });
-
-      const config = require("../config/config");
-
-      // Step 1: Get media info/URL from Whapi Cloud
-      const mediaInfoResponse = await axios.get(
-        `${config.whapi.baseUrl}/media/${audioId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${config.whapi.token}`,
-          },
-          timeout: 15000,
-        }
-      );
-
-      const mediaUrl =
-        mediaInfoResponse.data.url ||
-        mediaInfoResponse.data.link ||
-        mediaInfoResponse.data.media?.url;
-
-      if (!mediaUrl) {
-        Logger.error("No media URL in response", {
-          response: mediaInfoResponse.data,
-        });
-        return null;
-      }
-
-      Logger.info("Media URL obtained", { url: mediaUrl.substring(0, 50) });
-
-      // Step 2: Download actual audio file
-      const audioResponse = await axios.get(mediaUrl, {
-        responseType: "arraybuffer",
-        headers: {
-          Authorization: `Bearer ${config.whapi.token}`,
-        },
-        timeout: 30000,
-      });
-
-      const buffer = Buffer.from(audioResponse.data);
-
-      Logger.info("Audio downloaded successfully", {
-        size: buffer.length,
-        mimeType: audioResponse.headers["content-type"],
-      });
-
-      return buffer;
-    } catch (error) {
-      Logger.error("Error downloading WhatsApp audio", {
-        message: error.message,
-        status: error.response?.status,
-        data: error.response?.data,
-      });
-      return null;
-    }
-  }
-  /**
-   * Handle natural language input with AI
-   */
-  // async handleNaturalLanguageInput(message, phoneNumber, messageText) {
-  //   try {
-  //     Logger.info("Processing natural language input", {
-  //       phoneNumber,
-  //       text: messageText.substring(0, 50),
-  //     });
-
-  //     // Get user context
-  //     const lastMessage = await usersQueries.getLastMessage(phoneNumber);
-  //     const user = await usersQueries.findUserByPhone(phoneNumber);
-
-  //     // Get user's projects for context
-  //     const userProjects = await Project.find(
-  //       { phoneNumber },
-  //       { projectId: 1, projectName: 1, tasks: 1 }
-  //     ).lean();
-
-  //     const conversationContext = {
-  //       currentProject: lastMessage?.context?.projectId
-  //         ? userProjects.find(
-  //             (p) => p.projectId === lastMessage.context.projectId
-  //           )
-  //         : null,
-  //       projects: userProjects,
-  //       userName: user?.name,
-  //     };
-
-  //     // Analyze intent with AI
-  //     const intent = await aiService.analyzeUserIntent(
-  //       messageText,
-  //       conversationContext
-  //     );
-
-  //     Logger.info("AI intent result", {
-  //       intent: intent.intent,
-  //       confidence: intent.confidence,
-  //     });
-
-  //     // Handle low confidence - ask for clarification
-  //     if (intent.needsClarification && intent.clarificationQuestion) {
-  //       await whatsappService.sendMessage(
-  //         phoneNumber,
-  //         `🤔 ${intent.clarificationQuestion}`
-  //       );
-  //       return { success: true, handled: true };
-  //     }
-
-  //     // Route based on intent
-  //     return await this.routeByIntent(
-  //       phoneNumber,
-  //       intent,
-  //       conversationContext,
-  //       message
-  //     );
-  //   } catch (error) {
-  //     Logger.error("Error handling natural language", error);
-  //     return { success: false, handled: false };
-  //   }
-  // }
-
-  /**
-   * Route user to appropriate service based on AI intent
-   */
-  async routeByIntent(phoneNumber, intent, context, message) {
-    try {
-      const { intent: intentName, entities, suggestedAction } = intent;
-
-      switch (intentName) {
-        case "update_task":
-          return await this.handleUpdateTaskIntent(
-            phoneNumber,
-            entities,
-            context
-          );
-
-        case "view_tasks":
-          return await this.handleViewTasksIntent(
-            phoneNumber,
-            entities,
-            context
-          );
-
-        case "view_projects":
-          await projectService.listProjects(phoneNumber, 1);
-          return { success: true, handled: true };
-
-        case "submit_project":
-          await projectSubmissionService.submitImprovementProject(phoneNumber);
-          return { success: true, handled: true };
-
-        case "view_report":
-          return await this.handleViewReportIntent(
-            phoneNumber,
-            entities,
-            context
-          );
-
-        case "view_certificate":
-          return await this.handleViewCertificateIntent(
-            phoneNumber,
-            entities,
-            context
-          );
-
-        case "ask_help":
-          await whatsappService.sendMessage(
-            phoneNumber,
-            `📋 *How can I help you?*\n\n` +
-              `You can say things like:\n` +
-              `• "Show my projects"\n` +
-              `• "Update task 3"\n` +
-              `• "I completed the classroom task"\n` +
-              `• "Submit my project"\n` +
-              `• "View my certificate"\n\n` +
-              `Or type 'menu' for options.`
-          );
-          return { success: true, handled: true };
-
-        case "general_chat":
-          if (suggestedAction) {
-            await whatsappService.sendMessage(
-              phoneNumber,
-              `👋 ${suggestedAction}\n\nType 'menu' to see what you can do.`
-            );
-          }
-          return { success: true, handled: true };
-
-        default:
-          // Fallback to menu
-          return await userService.handleUserMessage(message);
-      }
-    } catch (error) {
-      Logger.error("Error routing by intent", error);
-      return { success: false, handled: false };
-    }
-  }
-
-  /**
-   * Handle update task intent
-   */
-  async handleUpdateTaskIntent(phoneNumber, entities, context) {
-    try {
-      let projectId = context.currentProject?.projectId;
-
-      // If no current project, try to find from project name
-      if (!projectId && entities.project_name) {
-        const matchingProject = context.projects.find((p) =>
-          p.projectName
-            .toLowerCase()
-            .includes(entities.project_name.toLowerCase())
-        );
-        projectId = matchingProject?.projectId;
-      }
-
-      // If still no project and user has only one, use that
-      if (!projectId && context.projects.length === 1) {
-        projectId = context.projects[0].projectId;
-      }
-
-      // If no project identified, ask user to select
-      if (!projectId) {
-        await whatsappService.sendMessage(
-          phoneNumber,
-          `📁 Which project would you like to update?\n\nPlease select from your projects:`
-        );
-        await projectService.listProjects(phoneNumber, 1);
-        return { success: true, handled: true };
-      }
-
-      // Get project from DB
-      const project = await Project.findOne({ projectId, phoneNumber }).lean();
-
-      if (!project) {
-        await whatsappService.sendMessage(
-          phoneNumber,
-          `❌ Project not found. Please select a project first.`
-        );
-        await projectService.listProjects(phoneNumber, 1);
-        return { success: true, handled: true };
-      }
-
-      // Find task by number or name
-      let taskIndex = -1;
-
-      if (entities.task_number) {
-        taskIndex = entities.task_number - 1;
-      } else if (entities.task_name) {
-        const matchingTaskIndex = project.tasks.findIndex((t) =>
-          (t.taskName || t.name)
-            .toLowerCase()
-            .includes(entities.task_name.toLowerCase())
-        );
-        taskIndex = matchingTaskIndex;
-      }
-
-      // If task found, handle based on action
-      if (taskIndex >= 0 && taskIndex < project.tasks.length) {
-        const task = project.tasks[taskIndex];
-
-        // Update context
-        await usersQueries.updateLastMessage(phoneNumber, {
-          flow: "project_tasks",
-          step: 1,
-          context: {
-            projectId,
-            currentTaskIndex: taskIndex + 1,
-          },
-          text: "ai_update_task",
-        });
-
-        // If status mentioned, update directly
-        if (entities.status) {
-          await taskService.handleStatusUpdate(
-            phoneNumber,
-            taskIndex + 1,
-            entities.status
-          );
-        } else {
-          // Show task details
-          await taskService.showTaskDetails(phoneNumber, taskIndex + 1);
-        }
-
-        return { success: true, handled: true };
-      }
-
-      // Task not found - show task list
-      await whatsappService.sendMessage(
-        phoneNumber,
-        `📋 Here are the tasks for *${project.projectName}*:\n\nSelect a task to update:`
-      );
-      await taskService.showTaskSummary(phoneNumber, project.tasks, 1);
-
-      return { success: true, handled: true };
-    } catch (error) {
-      Logger.error("Error handling update task intent", error);
-      return { success: false, handled: false };
-    }
-  }
-
-  /**
-   * Handle view tasks intent
-   */
-  async handleViewTasksIntent(phoneNumber, entities, context) {
-    try {
-      let projectId = context.currentProject?.projectId;
-
-      if (!projectId && entities.project_name) {
-        const matchingProject = context.projects.find((p) =>
-          p.projectName
-            .toLowerCase()
-            .includes(entities.project_name.toLowerCase())
-        );
-        projectId = matchingProject?.projectId;
-      }
-
-      if (!projectId && context.projects.length === 1) {
-        projectId = context.projects[0].projectId;
-      }
-
-      if (!projectId) {
-        await whatsappService.sendMessage(
-          phoneNumber,
-          `📁 Select a project to view tasks:`
-        );
-        await projectService.listProjects(phoneNumber, 1);
-        return { success: true, handled: true };
-      }
-
-      const project = await Project.findOne({ projectId, phoneNumber }).lean();
-
-      if (project) {
-        await taskService.showTasksMenu(phoneNumber, project);
-      } else {
-        await projectService.listProjects(phoneNumber, 1);
-      }
-
-      return { success: true, handled: true };
-    } catch (error) {
-      Logger.error("Error handling view tasks intent", error);
-      return { success: false, handled: false };
     }
   }
 }

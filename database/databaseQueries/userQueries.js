@@ -148,7 +148,7 @@ module.exports = class users {
   static async getLastMessage(phoneNumber) {
     const user = await database.models.user.findOne(
       { phoneNumber },
-      { lastMessage: 1, name: 1 }
+      { lastMessage: 1, name: 1 ,wsSession: 1}
     ).lean();
     return user?.lastMessage || null;
   }
