@@ -1,213 +1,4 @@
-// // ============================================
-// // FILE: services/fileUploadService.js
-// // ============================================
-// const Logger = require("../utils/logger");
-// const { makeApiRequest } = require("../generics/services/axios");
-// const usersQueries = require("../database/databaseQueries/userQueries");
-// const whatsappService = require("./whatsappService");
 
-// const API_BASE_URL = "https://qa.elevate-apis.shikshalokam.org";
-// const PRE_SIGNED_URLS_ENDPOINT = "/project/v1/cloud-services/files/preSignedUrls";
-// const SYNC_ENDPOINT = "/project/v1/userProjects/sync";
-
-// class FileUploadService {
-//   /**
-//    * Get pre-signed URLs for file upload
-//    */
-//   static async getPreSignedUrls(projectId, fileNames) {
-//     try {
-//       Logger.info("Requesting pre-signed URLs", {
-//         projectId,
-//         fileCount: fileNames.length,
-//       });
-
-//       const url = `${API_BASE_URL}${PRE_SIGNED_URLS_ENDPOINT}`;
-
-//       const requestBody = {
-//         request: {
-//           [projectId]: fileNames,
-//         },
-//       };
-
-//       const response = await makeApiRequest(
-//         "POST",
-//         url,
-//         process.env.ELEVATE_AUTH_TOKEN,
-//         requestBody
-//       );
-
-//       if (!response.success) {
-//         throw new Error(
-//           response.error?.message || "Failed to get pre-signed URLs"
-//         );
-//       }
-
-//       Logger.info("Pre-signed URLs received", {
-//         projectId,
-//         urlCount: Object.keys(response.data.result || {}).length,
-//       });
-
-//       return response.data.result;
-//     } catch (error) {
-//       Logger.error("Error getting pre-signed URLs", error);
-//       throw error;
-//     }
-//   }
-
-//   /**
-//    * Upload file to cloud storage using pre-signed URL
-//    */
-//   static async uploadFileToCloud(preSignedUrl, fileData, fileType) {
-//     try {
-//       Logger.info("Uploading file to cloud storage", { fileType });
-
-//       const response = await fetch(preSignedUrl, {
-//         method: "PUT",
-//         headers: {
-//           "Content-Type": fileType,
-//         },
-//         body: fileData,
-//       });
-
-//       if (!response.ok) {
-//         throw new Error(`Upload failed: ${response.statusText}`);
-//       }
-
-//       Logger.info("File uploaded successfully", { fileType });
-//       return true;
-//     } catch (error) {
-//       Logger.error("Error uploading file to cloud", error);
-//       throw error;
-//     }
-//   }
-
-//   /**
-//    * Store task evidence in database
-//    */
-//   static async storeTaskEvidence(phoneNumber, taskId, projectId, fileInfo) {
-//     try {
-//       const lastMessage = await usersQueries.getLastMessage(phoneNumber);
-//       const tasks = lastMessage?.context?.tasks || [];
-
-//       // Find the task and add evidence
-//       const taskIndex = tasks.findIndex((t) => t.id === taskId);
-//       if (taskIndex !== -1) {
-//         if (!tasks[taskIndex].evidence) {
-//           tasks[taskIndex].evidence = [];
-//         }
-//         tasks[taskIndex].evidence.push(fileInfo);
-//       }
-
-//       // Update context with evidence
-//       await usersQueries.updateLastMessage(phoneNumber, {
-//         flow: lastMessage.flow,
-//         step: lastMessage.step,
-//         context: {
-//           ...lastMessage.context,
-//           tasks,
-//         },
-//         text: lastMessage.text,
-//       });
-
-//       Logger.info("Task evidence stored", {
-//         phoneNumber,
-//         taskId,
-//         fileName: fileInfo.name,
-//       });
-//     } catch (error) {
-//       Logger.error("Error storing task evidence", error);
-//       throw error;
-//     }
-//   }
-
-//   /**
-//    * Sync project data to server
-//    */
-//   static async syncProjectToServer(phoneNumber, projectData) {
-//     try {
-//       Logger.info("Syncing project to server", {
-//         phoneNumber,
-//         projectId: projectData._id,
-//       });
-
-//       const projectId = projectData._id;
-//       const lastDownloadedAt = projectData.lastDownloadedAt;
-
-//       const url = `${API_BASE_URL}${SYNC_ENDPOINT}/${projectId}?lastDownloadedAt=${lastDownloadedAt}`;
-
-//       Logger.info("Calling sync API", { url });
-
-//       const response = await makeApiRequest(
-//         "POST",
-//         url,
-//         process.env.ELEVATE_AUTH_TOKEN,
-//         projectData
-//       );
-
-//       if (!response.success) {
-//         throw new Error(response.error?.message || "Sync failed");
-//       }
-
-//       Logger.info("Project synced successfully", {
-//         phoneNumber,
-//         projectId,
-//       });
-
-//       return response.data.result;
-//     } catch (error) {
-//       Logger.error("Error syncing project", error);
-//       throw error;
-//     }
-//   }
-
-//   /**
-//    * Prepare project data for sync
-//    */
-//   static async prepareProjectForSync(phoneNumber, projectData) {
-//     try {
-//       const lastMessage = await usersQueries.getLastMessage(phoneNumber);
-//       const tasks = lastMessage?.context?.tasks || [];
-//       const projectTasks = projectData.tasks || [];
-
-//       Logger.info("Preparing project for sync", {
-//         phoneNumber,
-//         taskCount: tasks.length,
-//       });
-
-//       // Update task statuses and evidence in projectData
-//       const updatedTasks = projectTasks.map((projectTask) => {
-//         const updatedTask = tasks.find((t) => t.id === projectTask._id);
-
-//         if (updatedTask) {
-//           return {
-//             ...projectTask,
-//             status: updatedTask.status || projectTask.status,
-//             endDate: updatedTask.endDate || projectTask.endDate,
-//             attachments: updatedTask.evidence || projectTask.attachments || [],
-//           };
-//         }
-
-//         return projectTask;
-//       });
-
-//       const syncPayload = {
-//         ...projectData,
-//         tasks: updatedTasks,
-//         status: "submitted", // Mark as submitted
-//         lastDownloadedAt: new Date().toISOString(),
-//       };
-
-//       Logger.info("Project prepared for sync", { phoneNumber });
-
-//       return syncPayload;
-//     } catch (error) {
-//       Logger.error("Error preparing project for sync", error);
-//       throw error;
-//     }
-//   }
-// }
-
-// module.exports = FileUploadService;
 
 // ============================================
 // FILE: services/fileUploadService.js
@@ -225,7 +16,7 @@ const {
 const usersQueries = require("../database/databaseQueries/userQueries");
 const whatsappService = require("./whatsappService");
 const Project = require("../database/models/project");
-const { v4: uuidv4 } = require("uuid");
+const { randomUUID } = require("crypto");
 
 const API_BASE_URL = process.env.BACKEND_API_URL ;
 const PRE_SIGNED_URLS_ENDPOINT =
@@ -487,20 +278,16 @@ class FileUploadService {
       }
 
       // Step 3: Download media from WhatsApp
-      const fileName = `${Date.now()}_${uuidv4().slice(
-        0,
-        8
-      )}.${this.getFileExtension(mediaType)}`;
+      const uniqueId = randomUUID().slice(0, 8);
+
+      const fileName = `${Date.now()}_${uniqueId}.${this.getFileExtension(mediaType)}`;
       const downloadedFile = await this.downloadWhatsAppMedia(
         mediaUrl,
         fileName
       );
 
       // Step 4: Generate cloud file name
-      const cloudFileName = `${Date.now()}_${uuidv4().slice(
-        0,
-        8
-      )}.${this.getFileExtension(mediaType)}`;
+      const cloudFileName = `${Date.now()}_${randomUUID().slice(0, 8)}.${this.getFileExtension(mediaType)}`;
 
       // Step 5: Get pre-signed URLs
       const preSignedUrls = await this.getPreSignedUrls(projectId, [
@@ -537,7 +324,7 @@ class FileUploadService {
       // Step 7: Generate source path
       const sourcePath = `project/${projectId}/${
         task.taskId
-      }/${uuidv4()}/${cloudFileName}`;
+      }/${randomUUID()}/${cloudFileName}`;
 
 
       // Step 8: Create evidence object

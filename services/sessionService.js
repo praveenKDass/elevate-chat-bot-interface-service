@@ -9,8 +9,7 @@ const usersQueries = require("../database/databaseQueries/userQueries");
 const whatsappService = require("./whatsappService");
 const languageService = require("./languageService");
 
-const MOHINI_BASE_URL =
-  process.env.BACKEND_API_URL ;
+const MOHINI_BASE_URL =process.env.BACKEND_API_URL ;
 
 const MOHINI_WS_URL =process.env.MOHINI_WS_URL ;
 

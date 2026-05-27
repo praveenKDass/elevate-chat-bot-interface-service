@@ -9,7 +9,8 @@ const whatsappService = require("./whatsappService");
 const languageService = require("./languageService");
 const fs = require("fs").promises;
 const path = require("path");
-const { v4: uuidv4 } = require("uuid");
+const { randomUUID } = require("crypto");
+
 const {
   makeApiRequest,
   downloadBinaryFile,
@@ -62,6 +63,8 @@ class StoryPostSessionService {
       // sessionService normally verifies this before calling us, but
       // we guard here too so direct calls (e.g. session_end message)
       // don't bypass the check accidentally.
+      whatsappService.sendTyping(phoneNumber);
+      
       const sessionService = require("./sessionService");
       const isCompleted = await sessionService.checkSessionCompleted(
         session.sessionId,
@@ -166,10 +169,10 @@ class StoryPostSessionService {
         uploadCount: ctx.uploadCount,
         storyId: ctx.storyId,
       });
-      const fileName = `${Date.now()}_${uuidv4().slice(
-        0,
-        8,
-      )}.${this.getFileExtension(mediaType)}`;
+
+      const uniqueId = randomUUID().slice(0, 8);
+
+      const fileName = `${Date.now()}_${uniqueId}.${this.getFileExtension(mediaType)}`;
       // ── Step 1: Download image from WhatsApp ─────────────────────
       const downloadedFile = await this._downloadWhatsAppImage(
         mediaUrl,

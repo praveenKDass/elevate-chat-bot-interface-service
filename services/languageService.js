@@ -15,7 +15,7 @@ const LANGUAGE_MAP = {
   language_4: { code: "te", label: "తెలుగు" },
 };
 
-const TRANSLATION_BASE_URL =`${process.env.BACKEND_API_URL}/mohini/locales`;
+const TRANSLATION_BASE_URL =`${process.env.LANGUAGE_SERVICE_URL}/mohini/locales`;
 
 class LanguageService {
   // ─────────────────────────────────────────
@@ -31,6 +31,8 @@ class LanguageService {
 
     const url = `${TRANSLATION_BASE_URL}/${lang.code}/translation.json`;
     const { data: translations } = await axios.get(url, { timeout: 10000 });
+
+    console.log("Fetched translations for", lang.code, "keys:", Object.keys(translations).length);
 
     // Persist language code + full translation map on the user record
     await usersQueries.update(

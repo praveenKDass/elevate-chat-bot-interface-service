@@ -38,16 +38,9 @@ class MessageController {
         phoneNumber,
         keys,
       );
-       // Fire-and-forget
-      // await storyPostSessionService.handleUploadDone(phoneNumber);
 
       // ──────────────────────────────────────────────────────────────
-      // STEP 0 (NEW): Auto-reconnect after server restart
-      //
-      // The in-memory activeConnections Map is wiped on every restart.
-      // If MongoDB still has scope.activeSession the session is live on
-      // Mohini's side — we just need to re-open the WebSocket with the
-      // same sessionId and the same authenticate frame.
+      // STEP 0 : Auto-reconnect after server restar
       //
       // We skip this for interactive messages (button taps) because:
       //  a) flowRouter handles session_continue / session_new itself, and
