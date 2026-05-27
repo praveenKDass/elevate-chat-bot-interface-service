@@ -11,8 +11,7 @@ const Project = require("../database/models/project");
 const axios = require("axios");
 const storyPostSessionService = require("../services/storyPostSessionService");
 const languageService = require("../services/languageService");
-const MOHINI_BASE_URL =
-  process.env.MOHINI_BASE_URL || "https://qa-mohini.shikshalokam.org";
+const MOHINI_BASE_URL =process.env.BACKEND_API_URL;
 class MessageController {
   /**
    * Main entry point for all WhatsApp messages.
@@ -32,13 +31,14 @@ class MessageController {
         phoneNumber,
         type: message.type,
       });
+      whatsappService.sendTyping(phoneNumber);
 
       const keys = ["whatsappNotSupported", "notUnderstood"];
       const selectedLanguageText = await languageService.tBatch(
         phoneNumber,
         keys,
       );
-
+       // Fire-and-forget
       // await storyPostSessionService.handleUploadDone(phoneNumber);
 
       // ──────────────────────────────────────────────────────────────
@@ -390,7 +390,7 @@ class MessageController {
       //   {
       //     headers: {
       //       "Content-Type": "application/json",
-      //       Origin: "https://qa.elevate-mitra.shikshalokam.org",
+      //       Origin: process.env.ORIGIN_URL,
       //     },
       //     timeout: 15000,
       //   },
@@ -428,7 +428,7 @@ class MessageController {
         {
           headers: {
             "Content-Type": "application/json",
-            Origin: "https://qa.elevate-mitra.shikshalokam.org",
+            Origin: process.env.ORIGIN_URL,
           },
           timeout: 30000,
         },

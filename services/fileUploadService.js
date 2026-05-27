@@ -227,7 +227,7 @@ const whatsappService = require("./whatsappService");
 const Project = require("../database/models/project");
 const { v4: uuidv4 } = require("uuid");
 
-const API_BASE_URL = "https://qa.elevate-apis.shikshalokam.org";
+const API_BASE_URL = process.env.BACKEND_API_URL ;
 const PRE_SIGNED_URLS_ENDPOINT =
   "/project/v1/cloud-services/files/preSignedUrls";
 const SYNC_ENDPOINT = "/project/v1/userProjects/sync";
@@ -435,7 +435,6 @@ class FileUploadService {
    * Process evidence upload from WhatsApp message
    */
   static async handleEvidenceUpload(phoneNumber, message) {
-    console.log(message, "this is evidvenc");
     const mediaType = message.type; // "image", "document", "video", "audio"
     const mediaId = message[mediaType]?.id;
     const mediaUrl = message[mediaType]?.link;
@@ -513,7 +512,6 @@ class FileUploadService {
       // }
 
       const filesObj = preSignedUrls?.[projectId]?.files;
-      console.log(JSON.stringify(preSignedUrls), "this id is this id");
 
       if (!filesObj || !filesObj.length) {
         throw new Error("Files not found in pre-signed url response");
@@ -541,7 +539,6 @@ class FileUploadService {
         task.taskId
       }/${uuidv4()}/${cloudFileName}`;
 
-      console.log(preSignedUrl, "this is presignedUrl");
 
       // Step 8: Create evidence object
       const evidenceObject = {

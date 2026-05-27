@@ -5,7 +5,7 @@ const Logger = require("../utils/logger");
 const usersQueries = require("../database/databaseQueries/userQueries");
 const whatsappService = require("./whatsappService");
 
-const STORY_RECORDING_URL = "https://qa.elevate-mitra.shikshalokam.org/mohini/home";
+const STORY_RECORDING_URL =   `${process.env.BACKEND_API_URL}/mohini/home`;
 
 class StoryService {
   /**

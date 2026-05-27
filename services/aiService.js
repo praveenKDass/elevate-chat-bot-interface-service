@@ -282,7 +282,6 @@ class AIService {
         response = await this.callOpenAI(systemPrompt, userMessage);
       }
 
-      console.log(response, "this is response from analyzeUserIntent");
 
       const intent = this.parseIntentResponse(response);
 
@@ -343,10 +342,6 @@ class AIService {
         }
       );
 
-      console.log(
-        JSON.stringify(response.data, null, 2),
-        "this is full response from claude"
-      );
 
       if (!response.data.content || response.data.content.length === 0) {
         throw new Error("No content in Claude response");

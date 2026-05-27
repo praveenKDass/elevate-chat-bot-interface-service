@@ -81,10 +81,10 @@ class UserService {
         Logger.info("New user – creating record", { phoneNumber });
         await this.createUser(phoneNumber, senderName, messageText);
 
-        await whatsappService.sendMessage(
-          phoneNumber,
-          `👋 Hi *${senderName}*, welcome to *Mitra Bot*!`
-        );
+        // await whatsappService.sendMessage(
+        //   phoneNumber,
+        //   `👋 Hi *${senderName}*, welcome to *Mitra Bot*!`
+        // );
 
         const langMsg = languageService.buildLanguageSelectionMessage(phoneNumber);
         await whatsappService.sendInteractiveMessage(langMsg);

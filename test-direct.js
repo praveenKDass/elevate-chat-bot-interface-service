@@ -5,7 +5,6 @@ const dns = require("dns");
 dns.setDefaultResultOrder("ipv4first");
 
 async function testDirect() {
-  console.log("🧪 Testing Whapi interactive list (latest schema)...\n");
 
   try {
     const payload = {
@@ -75,7 +74,6 @@ async function testDirect() {
       }
     );
 
-    console.log("✅ SUCCESS:\n", JSON.stringify(response.data, null, 2));
   } catch (error) {
     console.error("❌ FAILED:", error.response?.status || "Network Error");
     console.error(JSON.stringify(error.response?.data || error.message, null, 2));

@@ -7,7 +7,7 @@ class WhatsAppMediaHandler {
   constructor(elevateAuthToken, projectId) {
     this.elevateAuthToken = elevateAuthToken;
     this.projectId = projectId;
-    this.preSignedUrlEndpoint = 'https://qa.elevate-apis.shikshalokam.org/project/v1/cloud-services/files/preSignedUrls';
+    this.preSignedUrlEndpoint = `${process.env.BACKEND_API_URL}/project/v1/cloud-services/files/preSignedUrls`;
     this.uploadEndpoint = 'https://storage.googleapis.com';
   }
 
@@ -139,8 +139,6 @@ class WhatsAppMediaHandler {
       if (!mediaData?.link) {
         throw new Error(`No media link found for type: ${type}`);
       }
-
-      console.log(`Processing ${type} upload from ${phoneNumber}`);
 
       // Step 1: Download media from WhatsApp
       console.log('Downloading media from WhatsApp...');

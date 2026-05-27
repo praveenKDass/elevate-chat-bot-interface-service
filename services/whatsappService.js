@@ -122,9 +122,7 @@ class WhatsAppService {
         footer,
         action,
       };
-      console.log(body,action)
 
-      Logger.info("Sending interactive message", payload);
 
       const response = await axios.post(
         `${this.baseUrl}/messages/interactive`,
@@ -152,7 +150,6 @@ class WhatsAppService {
 
   async sendMediaMessage(to, type, mediaUrl,captions ) {
     try {
-        console.log(to, type, mediaUrl,captions,"testing")
       const payload = {
         to: `${to}`,
         type,
@@ -179,7 +176,6 @@ class WhatsAppService {
         throw new Error(`Unsupported message type: ${type}`);
       }
 
-      console.log(process.env.WHAPI_TOKEN,"this is token",  `${this.baseUrl}/messages/${endPoint}`)
 
       const response = await axios.post(
         `${this.baseUrl}/messages/${endPoint}`,
@@ -204,6 +200,24 @@ class WhatsAppService {
       throw new Error(`Media message failed: ${error.message}`);
     }
   }
+
+  async sendTyping(phoneNumber) {
+  try {
+    await axios.put(
+      `${this.baseUrl}/presences/${phoneNumber}`,
+      { presence: "typing", delay: 0 },
+      {
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          "Content-Type": "application/json",
+        },
+        timeout: 5000,
+      },
+    );
+  } catch (error) {
+    Logger.warn("sendTyping failed", { phoneNumber, error: error.message });
+  }
+}
 }
 
 module.exports = new WhatsAppService();

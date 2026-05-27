@@ -133,7 +133,6 @@ module.exports = class users {
       lastInteractionAt: new Date(),
     };
     const phoneNumberStr = phoneNumber.toString();
-    console.log(phoneNumber,updateData,"this is before insert")
     return await database.models.user.findOneAndUpdate(
       { phoneNumber:phoneNumberStr },
       { $set: updateData },

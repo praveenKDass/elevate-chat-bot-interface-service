@@ -15,9 +15,7 @@ const LANGUAGE_MAP = {
   language_4: { code: "te", label: "తెలుగు" },
 };
 
-const TRANSLATION_BASE_URL =
-  process.env.TRANSLATION_BASE_URL ||
-  "https://qa.elevate-mitra.shikshalokam.org/mohini/locales";
+const TRANSLATION_BASE_URL =`${process.env.BACKEND_API_URL}/mohini/locales`;
 
 class LanguageService {
   // ─────────────────────────────────────────
@@ -137,7 +135,7 @@ async tBatch(phoneNumber, keys) {
       to,
       type: "button",
       body: {
-        text: "👋 Welcome to *Mitra Bot*!\n\nPlease select your language:\nकृपया अपनी भाषा चुनें:\nದಯವಿಟ್ಟು ನಿಮ್ಮ ಭಾಷೆಯನ್ನು ಆಯ್ಕೆ ಮಾಡಿ:",
+        text: "👋 Welcome to *Mitra *!\n\nPlease select your language:\nकृपया अपनी भाषा चुनें:\nದಯವಿಟ್ಟು ನಿಮ್ಮ ಭಾಷೆಯನ್ನು ಆಯ್ಕೆ ಮಾಡಿ:",
       },
       action: {
         buttons: [

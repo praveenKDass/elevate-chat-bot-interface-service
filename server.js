@@ -11,7 +11,6 @@ const inactivityReminderService = require("./services/inactivityReminderService"
 const validateConfig = () => {
   const required = ["WHAPI_TOKEN", "MONGODB_URL"];
   const missing = required.filter((key) => !process.env[key]);
-  console.log(missing, "this is miss");
   if (missing.length > 0) {
     Logger.error("Missing required environment variables", { missing });
     process.exit(1);

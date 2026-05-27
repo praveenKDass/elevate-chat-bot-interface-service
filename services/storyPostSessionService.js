@@ -1,15 +1,7 @@
 // ============================================
 // FILE: services/storyPostSessionService.js
-//
-// Handles the full post-WS flow:
-//  1. Verify session is COMPLETED via /api/companychat/ (called by sessionService
-//     before reaching here, but we accept the session object directly)
-//  2. Call POST /api/end-story/
-//  3. Ask user to upload photos (max 10)
-//  4. For each photo: presigned URL → S3 PUT → storymedia API
-//  5. Ask to download or edit report
-//  6. GET /api/get-story/ → fetch PDF → send via WhatsApp
-// ============================================
+
+
 const axios = require("axios");
 const Logger = require("../utils/logger");
 const usersQueries = require("../database/databaseQueries/userQueries");
@@ -23,11 +15,7 @@ const {
   downloadBinaryFile,
 } = require("../generics/services/axios");
 
-const MOHINI_BASE_URL =
-  process.env.MOHINI_BASE_URL || "https://qa-mohini.shikshalokam.org";
-
-const MOHINI_STATIC_BASE =
-  process.env.MOHINI_STATIC_BASE || "https://qa-mohini-static.shikshalokam.org";
+const MOHINI_BASE_URL =process.env.BACKEND_API_URL ;
 
 const MAX_PHOTOS = 10;
 
@@ -494,7 +482,7 @@ class StoryPostSessionService {
       );
 
       const editUrl =
-        `https://qa.elevate-mitra.shikshalokam.org/mohini/guest-chat` +
+        `${process.env.BACKEND_API_URL}/mohini/guest-chat` +
         `?session=${sessionId}`;
 
       await whatsappService.sendMessage(
@@ -537,7 +525,7 @@ class StoryPostSessionService {
         {
           headers: {
             "Content-Type": "application/json",
-            Origin: "https://qa.elevate-mitra.shikshalokam.org",
+            Origin: process.env.ORIGIN_URL,
           },
           timeout: 5000,
         },
@@ -599,7 +587,7 @@ class StoryPostSessionService {
         {
           headers: {
             Accept: "application/json, text/plain, */*",
-            Origin: "https://qa.elevate-mitra.shikshalokam.org",
+            Origin: process.env.ORIGIN_URL,
           },
           timeout: 15000,
         },
@@ -623,7 +611,7 @@ class StoryPostSessionService {
         {
           headers: {
             Accept: "application/json, text/plain, */*",
-            Origin: "https://qa.elevate-mitra.shikshalokam.org",
+            Origin: process.env.ORIGIN_URL,
           },
           timeout: 15000,
         },
@@ -646,7 +634,6 @@ class StoryPostSessionService {
       Logger.warn("No storyId in get-story response", { phoneNumber, story });
       return null;
     }
-    console.log(story.results[0].id, "this is story");
     return story.results[0].id;
   }
 
@@ -661,7 +648,7 @@ class StoryPostSessionService {
         {
           headers: {
             "Content-Type": "application/json",
-            Origin: "https://qa.elevate-mitra.shikshalokam.org",
+            Origin: process.env.ORIGIN_URL,
           },
           timeout: 15000,
         },
@@ -733,7 +720,7 @@ class StoryPostSessionService {
         {
           headers: {
             "Content-Type": "application/json",
-            Origin: "https://qa.elevate-mitra.shikshalokam.org",
+            Origin: process.env.ORIGIN_URL,
           },
           timeout: 5000,
         },

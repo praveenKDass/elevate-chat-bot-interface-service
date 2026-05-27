@@ -10,14 +10,13 @@ const whatsappService = require("./whatsappService");
 const languageService = require("./languageService");
 
 const MOHINI_BASE_URL =
-  process.env.MOHINI_BASE_URL || "https://qa-mohini.shikshalokam.org";
+  process.env.BACKEND_API_URL ;
 
-const MOHINI_WS_URL =
-  process.env.MOHINI_WS_URL || "wss://qa-mohini.shikshalokam.org/ws/common/";
+const MOHINI_WS_URL =process.env.MOHINI_WS_URL ;
 
-const MOHINI_COMPANY   = process.env.MOHINI_COMPANY   || "shikshalokamstaging";
-const MOHINI_BOT_ROUTE = process.env.MOHINI_BOT_ROUTE || "/shikshalokam_chaupal";
-const MOHINI_PROJECT_BOT_ROUTE = process.env.MOHINI_PROJECT_BOT_ROUTE || "/guided_guest";
+const MOHINI_COMPANY   = process.env.MOHINI_COMPANY ;
+const MOHINI_CAPTURE_BOT_ROUTE = process.env.MOHINI_CAPTURE_BOT_ROUTE ;
+const MOHINI_PROJECT_BOT_ROUTE = process.env.MOHINI_PROJECT_BOT_ROUTE ;
 // Address fields sent in the authenticate frame.
 // For WhatsApp users we don't have real IP – use env-configured defaults
 // that represent the organisation's primary location.
@@ -34,7 +33,7 @@ const activeConnections = new Map();
 // phoneNumber → NodeJS.Timeout  (inactivity timers)
 const inactivityTimers = new Map();
 
-const LANGUAGE_ROUTE = { en: "en", hi: "hi", kn: "kn" };
+const LANGUAGE_ROUTE = { en: "en", hi: "hi", kn: "kn", te: "te" };
 const FLOW_NAME = { discussion: "guest-discussion", story: "guest-mi-story" };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -149,7 +148,7 @@ class SessionService {
 
       const ws = new WebSocket(MOHINI_WS_URL, {
         headers: {
-          Origin:           "https://qa.elevate-mitra.shikshalokam.org",
+          Origin:           process.env.ORIGIN_URL,
           "Cache-Control":  "no-cache",
           Pragma:           "no-cache",
           "Accept-Language":"en-GB,en-US;q=0.9,en;q=0.8",
@@ -174,7 +173,7 @@ class SessionService {
           taskid:       null,
           access_token: null,
           route:        LANGUAGE_ROUTE[session.language] || "en",
-          bot_route:    session.flowName ==="guest-discussion"? MOHINI_BOT_ROUTE : MOHINI_PROJECT_BOT_ROUTE,
+          bot_route:    session.flowName ==="guest-discussion"? MOHINI_CAPTURE_BOT_ROUTE : MOHINI_PROJECT_BOT_ROUTE,
           flow_name:    session.flowName || "guest-discussion",
           address: {
             ipCity:    MOHINI_IP_CITY,
@@ -491,8 +490,8 @@ class SessionService {
         },
         action: {
           buttons: [
-            { type: "quick_reply", title: "▶️ ${selectedLanguageText.continueBtnText}",    id: "session_continue" },
-            { type: "quick_reply", title: "🔄 ${selectedLanguageText.newChat}", id: "session_new"      },
+            { type: "quick_reply", title: `▶️ ${selectedLanguageText.continueBtnText}`,    id: "session_continue" },
+            { type: "quick_reply", title: `🔄 ${selectedLanguageText.newChat}`, id: "session_new"      },
           ],
         },
       });
@@ -513,7 +512,7 @@ class SessionService {
           params: { session: sessionId },
           headers: {
             Accept:  "application/json, text/plain, */*",
-            Origin:  "https://qa.elevate-mitra.shikshalokam.org",
+            Origin:  process.env.ORIGIN_URL,
           },
           timeout: 15000,
         }
@@ -567,8 +566,8 @@ class SessionService {
       },
       action: {
         buttons: [
-          { type: "quick_reply", title: "▶️ ${selectedLanguageText.continueBtnText}",   id: "session_continue" },
-          { type: "quick_reply", title: "🔄 ${selectedLanguageText.newChat}", id: "session_new"      },
+          { type: "quick_reply", title: `▶️ ${selectedLanguageText.continueBtnText}`,   id: "session_continue" },
+          { type: "quick_reply", title: `🔄 ${selectedLanguageText.newChat}`, id: "session_new"      },
         ],
       },
     });

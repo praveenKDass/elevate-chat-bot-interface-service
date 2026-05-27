@@ -1,94 +1,3 @@
-// const LANGUAGE_MESSAGE = {
-//   en: {
-//     conversationStartMessage:
-//       "Welcome! I’m MItra, and I’m here to collect your story of improvement. I’ve heard you and your community have done some amazing work, and I’d love to hear about it.To start, can you tell me your name?",
-//     conversationStartMessageForCaptureDiscussion:
-//       "Welcome! I’m MItra, and I’m here to capture the important points from your discussions. I know you and your community have shared valuable insights—both challenges and solutions. Before we get started, can you first tell me your name?",
-//     sessionReconnected:
-//       "Session reconnected! Please continue where you left off.",
-//     noPreviousSession:
-//       "Could not find your previous session. Please start a new one by typing 'Hi'.",
-//     errorMessage: "⚠️ Something went wrong. Type 'Hi' to start again.",
-//     sessionDiscontinue: "⚠️ Your session was disconnected.",
-//     reconnectMessage:
-//       "Would you like to *reconnect* to your existing session or start a *new one*?",
-//     inactiveSession: "Your session has been inactive for a while",
-//     reconnectPrompt:
-//       "Would you like to *continue* your current session or *start a new one*?",
-//     sessionCompleted:
-//       "Congratulations! You've completed your session. Type 'Hi' to start a new one.",
-//     maxPhotosWarning: "You've reached the maximum number of photos allowed",
-//     doneMessage: "Type *done* to generate your report",
-//     imageDownloadError: "Could not download the image. Please try again.",
-//     storyDownloadError: "Could not retrieve your story. Please try again.",
-//     imageUploadSuccess: "Image uploaded successfully!",
-//     remainingPhotos:
-//       "photo(s) remaining. You can send more photos/video or finish now..",
-//     addMorePhotos: "Add More Photos/videos",
-//     reportGenerationMessage: "photos uploaded! Generating your report...",
-//     downloadorEditReport: "Would you like to download the report or edit it?",
-//     reportRetrievalError: "Could not retrieve your report. Please try again.",
-//     editReportText: "*Edit your report",
-//     discussionRecorded: "Your discussion or story has been recorded!",
-//     uploadLimit: "You can upload up to",
-//     yesUpload: "Yes, Upload",
-//     evidenceLimit: "Please send your photos one by one (up to 10).",
-//     done: "Type *done* when you have finished uploading.",
-//     requestNextPhoto: "Please send your next photo.",
-//     lostSession: "Session lost. Please type 'Hi' to start again.",
-//     cancelEvidenceUpload: "Cancel Evidence Upload",
-//     cancelSession: "Cancelled. Type 'menu' to see options.",
-//     sessionLost:
-//       "Could not reconnect to your session. Returning to the main menu.",
-//     newSessionStarted: "Previous session cleared. Starting new session...",
-//     imageUploadFailed: "Failed to upload image. Please try again.",
-//     voiceProcessing: "Processing your voice note. Please wait...",
-//     whatsappNotSupported:
-//       "Sorry, I can only handle text, voice, images, and interactive messages",
-//     notUnderstood:
-//       "Sorry, Didnt understand that. Please type 'Hi' to see options or 'Menu' to see the main menu.",
-//     audioDownloadError: "Could not download audio. Please type your response.",
-//     wsSessionRequired:
-//       " Please respond with text/audio during an active session.",
-//     voiceProcessing: "Processing your voice message...",
-//     audioDownloadError: "Could not download the audio. Please try again.",
-//     notUnderstood: "Could not understand voice. Please type your response.",
-//     wsSessionRequired: "Please send text messages during an active session.",
-//     voiceHeard: "I heard:",
-//     voiceSendConfirm: "Send this message?",
-//     voiceEditPrompt: "✏️ Type your corrected message:",
-//     voiceRetryPrompt: "🔄 Please send your voice note again.",
-//     voiceSend: "✅ Send",
-//     voiceEdit: "✏️ Edit",
-//     voiceRetry: "🔄 Retry",
-//     voiceSent: "Message sent successfully.",
-//     voiceSendFailed: "Failed to send message. Please try again.",
-//     voiceNoPending:
-//       "No pending message found. Please send your voice note again.",
-//     voiceNoTranscript:
-//       "No transcript found to edit. Please send your voice note again.",
-//     voiceEditPrompt: "Type your corrected message:",
-//     voiceRetryPrompt: "Please send your voice note again.",
-//   },
-//   kn: {
-//     conversationStartMessage:
-//       "ಸ್ವಾಗತ! ನಾನು ಮಿತ್ರ, ಮತ್ತು ನಾನು ನಿಮ್ಮ ಸುಧಾರಣೆಯ ಕಥೆಯನ್ನು ಸಂಗ್ರಹಿಸಲು ಇಲ್ಲಿ ಇದ್ದೇನೆ. ನಾನು ಕೇಳಿದ್ದೇನೆ ನೀವು ಮತ್ತು ನಿಮ್ಮ ಸಮುದಾಯವು ಕೆಲವು ಅದ್ಭುತ ಕೆಲಸಗಳನ್ನು ಮಾಡಿದ್ದಾರೆ, ಮತ್ತು ನಾನು ಅದನ್ನು ಕೇಳಲು ಇಚ್ಛಿಸುತ್ತೇನೆ. ಪ್ರಾರಂಭಿಸಲು, ನೀವು ನನಗೆ ನಿಮ್ಮ ಹೆಸರು ಹೇಳಬಹುದ?",
-//     conversationStartMessageForCaptureDiscussion:
-//       "ಸವಗತ! నను మత్ర, మరియు ననకదకదకదకదకదకదకದకదకదకదకదకదకదకదకದಕబడడడడడడడడಡಡಡಡಡళళళళళళళళళళళళళళળળળળળળળળળળળળળળൾൾൾൾൾൾൾൾൾൾൾൾḷḷḷḷḷḷḷḷḷḷḷḷḷḷḷḷḷḷ</tool_call>",
-//   },
-//   hi: {
-//     conversationStartMessage:
-//       "स्वागत है! मैं मित्र हूँ, और मैं आपकी सुधार की कहानी इकट्ठा करने के लिए यहाँ हूँ। मैंने सुना है कि आप और आपका समुदाय कुछ अद्भुत काम कर रहे हैं, और मैं इसके बारे में सुनना चाहूंगा। शुरू करने के लिए, क्या आप मुझे अपना नाम बता सकते हैं?",
-//     conversationStartMessageForCaptureDiscussion:
-//       "स्वागत है! मैं मित्र हूँ, और मैं आपकी चर्चाओं से महत्वपूर्ण बिंदुओं को कैप्चर करने के लिए यहाँ हूँ। मुझे पता है कि आप और आपका समुदाय कुछ अमूल्य洞洞洞洞洞洞洞洞洞洞洞洞洞洞洞洞洞洞洞洞洞洞洞洞洞洞洞洞洞洞洞洞洞洞洞दृश्टांत साझा कर रहे हैं—दोनों चुनौतियाँ और समाधान",
-//   },
-//   te: {
-//     conversationStartMessage:
-//       "స్వాగతం! నేను మిత్ర, మరియు నేను మీ అభివృద్ధి కథను సేకరించడానికి ఇక్కడ ఉన్నాను. నేను విన్నాను మీరు మరియు మీ సమాజం కొన్ని అద్బతవలలలలలలలలలలలలలలలలలలలలలలలలలలలలలలలలలలలలల",
-//   },
-// };
-
-// module.exports = LANGUAGE_MESSAGE;
 
 const LANGUAGE_MESSAGE = {
   en: {
@@ -140,7 +49,8 @@ const LANGUAGE_MESSAGE = {
     voiceSent: "Message sent successfully.",
     voiceSendFailed: "Failed to send message. Please try again.",
     voiceNoPending: "No pending message found. Please send your voice note again.",
-    voiceNoTranscript: "No transcript found to edit. Please send your voice note again."
+    voiceNoTranscript: "No transcript found to edit. Please send your voice note again.",
+    languageSetup:"⏳ Setting up your language..."
   },
   kn: {
     conversationStartMessage: "ಸ್ವಾಗತ! ನಾನು ಮಿತ್ರ, ಮತ್ತು ನಾನು ನಿಮ್ಮ ಸುಧಾರಣೆಯ ಕಥೆಯನ್ನು ಸಂಗ್ರಹಿಸಲು ಇಲ್ಲಿದ್ದೇನೆ. ನೀವು ಮತ್ತು ನಿಮ್ಮ ಸಮುದಾಯವು ಕೆಲವು ಅದ್ಭುತ ಕೆಲಸಗಳನ್ನು ಮಾಡಿದ್ದೀರಿ ಎಂದು ನಾನು ಕೇಳಿದ್ದೇನೆ ಮತ್ತು ಅದರ ಬಗ್ಗೆ ಕೇಳಲು ನಾನು ಇಷ್ಟಪಡುತ್ತೇನೆ. ಪ್ರಾರಂಭಿಸಲು, ನಿಮ್ಮ ಹೆಸರನ್ನು ನನಗೆ ಹೇಳುವಿರಾ?",
@@ -191,7 +101,8 @@ const LANGUAGE_MESSAGE = {
     voiceSent: "ಸಂದೇಶವನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಕಳುಹಿಸಲಾಗಿದೆ.",
     voiceSendFailed: "ಸಂದೇಶವನ್ನು ಕಳುಹಿಸಲು ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು ಪುನಃ ಪ್ರಯತ್ನಿಸಿ.",
     voiceNoPending: "ಯಾವುದೇ ಬಾಕಿ ಉಳಿದಿರುವ ಸಂದೇಶ ಕಂಡುಬಂದಿಲ್ಲ. ದಯವಿಟ್ಟು ನಿಮ್ಮ ಧ್ವನಿ ಟಿಪ್ಪಣಿಯನ್ನು ಮತ್ತೊಮ್ಮೆ ಕಳುಹಿಸಿ.",
-    voiceNoTranscript: "ಸಂಪಾದಿಸಲು ಯಾವುದೇ ನಕಲು (ಟ್ರಾನ್ಸ್ಕ್ರಿಪ್ಟ್) ಕಂಡುಬಂದಿಲ್ಲ. ದಯವಿಟ್ಟು ನಿಮ್ಮ ಧ್ವನಿ ಟಿಪ್ಪಣಿಯನ್ನು ಮತ್ತೊಮ್ಮೆ ಕಳುಹಿಸಿ."
+    voiceNoTranscript: "ಸಂಪಾದಿಸಲು ಯಾವುದೇ ನಕಲು (ಟ್ರಾನ್ಸ್ಕ್ರಿಪ್ಟ್) ಕಂಡುಬಂದಿಲ್ಲ. ದಯವಿಟ್ಟು ನಿಮ್ಮ ಧ್ವನಿ ಟಿಪ್ಪಣಿಯನ್ನು ಮತ್ತೊಮ್ಮೆ ಕಳುಹಿಸಿ.",
+    languageSetup: "⏳ ನಿಮ್ಮ ಭಾಷೆಯನ್ನು ಹೊಂದಿಸಲಾಗುತ್ತಿದೆ..."
   },
   hi: {
     conversationStartMessage: "स्वागत है! मैं मित्रा हूँ, और मैं आपकी सुधार की कहानी इकट्ठा करने के लिए यहाँ हूँ। मैंने सुना है कि आपने और आपके समुदाय ने कुछ अद्भुत काम किया है, और मैं इसके बारे में सुनना चाहूँगा। शुरू करने के लिए, क्या आप मुझे अपना नाम बता सकते हैं?",
@@ -242,7 +153,8 @@ const LANGUAGE_MESSAGE = {
     voiceSent: "संदेश सफलतापूर्वक भेजा गया।",
     voiceSendFailed: "संदेश भेजने में विफल। कृपया पुनः प्रयास करें।",
     voiceNoPending: "कोई लंबित संदेश नहीं मिला। कृपया अपना वॉइस नोट दोबारा भेजें।",
-    voiceNoTranscript: "संपादित करने के लिए कोई ट्रांसक्रिप्ट नहीं मिली। कृपया अपना वॉइस नोट दोबारा भेजें।"
+    voiceNoTranscript: "संपादित करने के लिए कोई ट्रांसक्रिप्ट नहीं मिली। कृपया अपना वॉइस नोट दोबारा भेजें।",
+    languageSetup: "⏳ आपकी भाषा सेट की जा रही है..."
   },
   te: {
     conversationStartMessage: "స్వాగతం! నేను మిత్ర, మరియు నేను మీ అభివృద్ధి కథను సేకరించడానికి ఇక్కడ ఉన్నాను. మీరు మరియు మీ సంఘం కొన్ని అద్భుతమైన పనులు చేశారని నేను విన్నాను, దాని గురించి వినడానికి నేను ఆసక్తిగా ఉన్నాను. ప్రారంభించడానికి, దయచేసి మీ పేరు చెప్పగలరా?",
@@ -293,7 +205,8 @@ const LANGUAGE_MESSAGE = {
     voiceSent: "సందేశం విజయవంతంగా పంపబడింది.",
     voiceSendFailed: "సందేశం పంపడం విఫలమైంది. దయచేసి మళ్లీ ప్రయత్నించండి.",
     voiceNoPending: "పెండింగ్‌లో ఉన్న సందేశం ఏదీ కనుగొనబడలేదు. దయచేసి మీ వాయిస్ నోట్‌ను మళ్లీ పంపండి.",
-    voiceNoTranscript: "సవరించడానికి ట్రాన్స్‌క్రిప్ట్ ఏదీ కనుగొనబడలేదు. దయచేసి మీ వాయిస్ నోట్‌ను మళ్లీ పంపండి."
+    voiceNoTranscript: "సవరించడానికి ట్రాన్స్‌క్రిప్ట్ ఏదీ కనుగొనబడలేదు. దయచేసి మీ వాయిస్ నోట్‌ను మళ్లీ పంపండి.",
+    languageSetup: "⏳మీ భాషను సెటప్ చేస్తోంది..."
   }
 };
 
