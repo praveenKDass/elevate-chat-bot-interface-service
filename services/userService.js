@@ -123,7 +123,13 @@ class UserService {
           message.from,
           "❌ Something went wrong. Please try again."
         );
-      } catch (_) {}
+      } catch (error) {
+           Logger.error('Failed to send interactive message', {
+    message: error.message,
+    data: JSON.stringify(error.response?.data, null, 2), // force full serialization
+  });
+  throw new Error(`Interactive message failed: ${error.message}`);
+      }
       return { success: false, handled: true, error: error.message };
     }
   }

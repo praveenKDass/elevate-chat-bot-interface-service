@@ -10,7 +10,9 @@ const Logger = require('./utils/logger');
 const app = express();
 
 // Middleware
-app.use(express.json());
+app.use(express.json({
+  verify: (req, res, buf) => { req.rawBody = buf; }
+}));
 app.use(express.urlencoded({ extended: true }));
 
 // Request logging
@@ -26,8 +28,11 @@ app.use((req, res, next) => {
 // ROUTES
 // ============================================
 
+
 // Webhook routes (existing)
-app.use('/webhook', webhookRoutes);
+app.use(process.env.BASE_ROUTE || '/webhook', webhookRoutes);
+
+
 
 // MCP Service routes (new - for separate MCP server)
 app.use('/mcp', mcpRoutes);
@@ -39,7 +44,7 @@ app.get('/', (req, res) => {
     status: 'running',
     version: '1.0.0',
     endpoints: {
-      webhook: 'POST /webhook/whatsapp',
+      webhook: `POST ${process.env.BASE_ROUTE || "Not set"}`,
       mcp: 'POST /mcp/:toolName',
       health: 'GET /webhook/health'
     }

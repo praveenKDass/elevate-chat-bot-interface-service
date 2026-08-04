@@ -31,6 +31,8 @@ class MessageController {
         phoneNumber,
         type: message.type,
       });
+
+      
       whatsappService.sendTyping(phoneNumber);
 
       const keys = ["whatsappNotSupported", "notUnderstood"];
@@ -447,16 +449,20 @@ class MessageController {
   // ──────────────────────────────────────────────────────────────────
   // Check if message is interactive (buttons / lists)
   // ──────────────────────────────────────────────────────────────────
+  // static isInteractiveMessage(message) {
+  //   return !!(
+  //     message?.interactive?.buttons_reply?.id ||
+  //     message?.reply?.buttons_reply?.id ||
+  //     message?.buttons_reply?.id ||
+  //     message?.interactive?.list_reply?.id ||
+  //     message?.reply?.list_reply?.id ||
+  //     message?.list_reply?.id
+  //   );
+  // }
+
   static isInteractiveMessage(message) {
-    return !!(
-      message?.interactive?.buttons_reply?.id ||
-      message?.reply?.buttons_reply?.id ||
-      message?.buttons_reply?.id ||
-      message?.interactive?.list_reply?.id ||
-      message?.reply?.list_reply?.id ||
-      message?.list_reply?.id
-    );
-  }
+  return !!(message?.interactive?.button_reply?.id || message?.interactive?.list_reply?.id);
+}
 
   // ──────────────────────────────────────────────────────────────────
   // Simple keyword commands that don't need AI

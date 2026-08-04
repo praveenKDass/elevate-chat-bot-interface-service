@@ -20,5 +20,20 @@ module.exports = {
   webhook: {
     secret: process.env.WEBHOOK_SECRET, // Optional: for webhook validation
   },
-  
+
+  whatsappProvider: process.env.WHATSAPP_PROVIDER || 'whapi', // 'whapi' | 'meta'
+
+    whapi: {
+    baseUrl: process.env.WHAPI_BASE_URL,
+    token: process.env.WHAPI_TOKEN,
+    channel: process.env.WHAPI_CHANNEL,
+  },
+
+  meta: {
+    baseUrl: process.env.META_BASE_URL || 'https://graph.facebook.com/v20.0',
+    phoneNumberId: process.env.META_PHONE_NUMBER_ID,
+    accessToken: process.env.META_ACCESS_TOKEN,
+    appSecret: process.env.META_APP_SECRET,
+    verifyToken: process.env.META_VERIFY_TOKEN,
+  },
 };

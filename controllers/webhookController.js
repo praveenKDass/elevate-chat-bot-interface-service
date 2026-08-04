@@ -12,6 +12,17 @@ const userQueries = require("../database/databaseQueries/userQueries");
 const processedMessages = new Set();
 
 class WebhookController {
+
+
+  /* GET /webhook/whatsapp — Meta's verification handshake.
+   * Whapi doesn't call this, but the route is provider-agnostic.
+   */
+  verifyWebhook(req, res) {
+    if (whatsappService.verifyWebhookRequest(req)) {
+      return res.status(200).send(req.query['hub.challenge']);
+    }
+    return res.sendStatus(403);
+  }
   /**
    * Handle incoming WhatsApp webhook
    */
@@ -20,7 +31,11 @@ class WebhookController {
       // Acknowledge receipt immediately
       res.status(200).json({ status: "received" });
 
-      const { messages } = req.body;
+      // const { messages } = req.body;
+
+      const messages = whatsappService.parseIncoming(req.body);
+
+   
 
       if (!messages || messages.length === 0) {
         Logger.debug("No messages in webhook payload");

@@ -107,15 +107,18 @@ class FlowRouter {
     // ============================================
     // STEP 2: Extract interactive responses
     // ============================================
-    const buttonResponse =
-      message?.interactive?.buttons_reply?.id ||
-      message?.reply?.buttons_reply?.id ||
-      message?.buttons_reply?.id;
+    // const buttonResponse =
+    //   message?.interactive?.buttons_reply?.id ||
+    //   message?.reply?.buttons_reply?.id ||
+    //   message?.buttons_reply?.id;
 
-    const listResponse =
-      message?.interactive?.list_reply?.id ||
-      message?.reply?.list_reply?.id ||
-      message?.list_reply?.id;
+    // const listResponse =
+    //   message?.interactive?.list_reply?.id ||
+    //   message?.reply?.list_reply?.id ||
+    //   message?.list_reply?.id;
+
+    const buttonResponse = message?.interactive?.button_reply?.id;
+const listResponse = message?.interactive?.list_reply?.id;
 
     let selectedAction = buttonResponse || listResponse;
     if (selectedAction) {
